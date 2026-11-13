@@ -14,9 +14,10 @@ export class ProfileService {
   }
 
   async updateForUser(userId: string, email: string, dto: UpdateProfileDto) {
-    const { equipment, birthDate, ...fields } = dto;
+    const { equipment, birthDate, displayName, ...fields } = dto;
     const data: Prisma.UserProfileUpdateInput = {
       ...fields,
+      ...(displayName !== undefined ? { displayName } : {}),
       ...(birthDate === null ? { birthDate: null } : birthDate !== undefined ? { birthDate: new Date(birthDate) } : {}),
       ...(equipment !== undefined
         ? { equipment: equipment as Prisma.InputJsonValue }
@@ -24,8 +25,8 @@ export class ProfileService {
     };
     const createData: Prisma.UserProfileCreateInput = {
       user: { connect: { id: userId } },
-      displayName: dto.displayName ?? email.split('@')[0].slice(0, 60),
       ...fields,
+      displayName: displayName ?? email.split('@')[0].slice(0, 60),
       ...(birthDate === null ? { birthDate: null } : birthDate !== undefined ? { birthDate: new Date(birthDate) } : {}),
       ...(equipment !== undefined
         ? { equipment: equipment as Prisma.InputJsonValue }

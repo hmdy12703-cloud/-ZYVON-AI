@@ -7,4 +7,6 @@ RUN pnpm --filter @zyvon/database db:generate
 RUN pnpm --filter @zyvon/api build
 ENV NODE_ENV=production
 EXPOSE 4000
-CMD ["sh", "-c", "pnpm --filter @zyvon/database db:push && pnpm --filter @zyvon/api start"]
+# Schema synchronization is destructive-risk tooling and must never run implicitly.
+# Enable only for disposable development databases with ALLOW_PRISMA_DB_PUSH=true.
+CMD ["sh", "-c", "if [ \"$ALLOW_PRISMA_DB_PUSH\" = \"true\" ]; then pnpm --filter @zyvon/database db:push; fi; exec pnpm --filter @zyvon/api start"]

@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsInt,
   IsNumber,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Length,
@@ -17,6 +18,7 @@ import { Language, FitnessGoal, ExperienceLevel } from '@prisma/client';
 export class UpdateProfileDto {
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   @Length(2, 60)
   displayName?: string;
 

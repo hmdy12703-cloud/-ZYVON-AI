@@ -31,6 +31,8 @@ type Workout = { id: string; startedAt: string; completedAt: string | null; stat
 type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; completed: boolean; exercise?: { nameAr: string; nameEn: string } };
 type WorkoutDetail = { id: string; status: string; sets: WorkoutSet[] };
 type TrainingPlan = { id: string; title: string; goal: string; status: string; _count?: { days: number } };
+type AdminOverview = { users: number; exercises: number; publishedExercises: number; draftExercises: number; plans: number; workouts: number; nutritionLogs: number };
+type AdminExercise = { id: string; slug: string; nameAr: string; nameEn: string; difficulty: string; status: string };
 type NutritionLog = { id: string; loggedAt: string; calories: number | null; proteinGrams: number | null; carbsGrams: number | null; fatGrams: number | null; notes: string | null };
 type CoachMessage = { role: 'user' | 'coach'; text: string; mode?: 'AI' | 'RULE_BASED' };
 type PlanDetail = TrainingPlan & { days: Array<{ id: string; dayNumber: number; title: string; notes: string | null; exercises: Array<{ id: string; sets: number; repsMin: number; repsMax: number; restSeconds: number; exercise: { nameAr: string; nameEn: string; difficulty: string } }> }> };
@@ -71,6 +73,8 @@ export default function App() {
   const [error, setError] = useState('');
   const [coachMessages, setCoachMessages] = useState<CoachMessage[]>([]);
   const [nutritionLogs, setNutritionLogs] = useState<NutritionLog[]>([]);
+  const [adminOverview, setAdminOverview] = useState<AdminOverview | null>(null);
+  const [adminExercises, setAdminExercises] = useState<AdminExercise[]>([]);
   const [coachInput, setCoachInput] = useState('');
   const [coachMode, setCoachMode] = useState<'AI' | 'RULE_BASED' | null>(null);
 
@@ -132,6 +136,17 @@ export default function App() {
         setProfile(emptyProfile);
       }
       setUser(me.user);
+      if (me.user?.role === 'ADMIN') {
+        const [overview, adminItems] = await Promise.all([
+          api('/admin/overview'),
+          api('/admin/exercises'),
+        ]);
+        setAdminOverview(overview);
+        setAdminExercises(Array.isArray(adminItems) ? adminItems : []);
+      } else {
+        setAdminOverview(null);
+        setAdminExercises([]);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر تحميل البيانات');
       if (String(err).includes('Invalid') || String(err).includes('token')) logout();
@@ -240,6 +255,25 @@ export default function App() {
       await viewPlan(planId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر تفعيل الخطة');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function changeExerciseStatus(exerciseId: string, status: string) {
+    setBusy(true);
+    setError('');
+    try {
+      await api(`/admin/exercises/${exerciseId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+      const [overview, items] = await Promise.all([api('/admin/overview'), api('/admin/exercises')]);
+      setAdminOverview(overview);
+      setAdminExercises(Array.isArray(items) ? items : []);
+      setMessage('تم تحديث حالة التمرين.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر تحديث التمرين');
     } finally {
       setBusy(false);
     }
@@ -414,6 +448,26 @@ export default function App() {
           {plans.length ? <div className="history-list">{plans.map((plan) => <div className="history-row" key={plan.id}><div><strong>{plan.title}</strong><p>{plan._count?.days ?? 0} أيام · {plan.goal}</p></div><div className="plan-actions"><span className={plan.status === 'ACTIVE' ? 'status done' : 'status'}>{plan.status === 'ACTIVE' ? 'نشطة' : plan.status === 'DRAFT' ? 'مسودة' : plan.status}</span><button className="outline" disabled={busy} onClick={() => viewPlan(plan.id)}>التفاصيل</button>{plan.status !== 'ACTIVE' && <button className="outline" disabled={busy} onClick={() => activatePlan(plan.id)}>تفعيل</button>}</div></div>)}</div> : <p className="muted">أنشئ خطة أولية بناءً على ملفك الرياضي والتمارين المنشورة.</p>}
         </section>
         {selectedPlan && <section className="panel plan-detail-panel"><div className="section-heading"><div><p className="eyebrow">PLAN DETAILS</p><h2>{selectedPlan.title}</h2></div><button className="ghost" onClick={() => setSelectedPlan(null)}>إغلاق</button></div><div className="plan-days">{selectedPlan.days.map((day) => <article className="plan-day" key={day.id}><h3>{day.title}</h3>{day.notes && <p className="muted">{day.notes}</p>}{day.exercises.map((item) => <div className="plan-exercise" key={item.id}><div><strong>{item.exercise.nameAr}</strong><small>{item.exercise.nameEn}</small></div><span>{item.sets} مجموعات × {item.repsMin}–{item.repsMax}</span><span>راحة {item.restSeconds} ث</span></div>)}</article>)}</div></section>}
+        {user.role === 'ADMIN' && <section className="panel admin-panel">
+          <div className="section-heading"><div><p className="eyebrow">ADMINISTRATION</p><h2>لوحة إدارة ZYVON</h2></div><span className="pill">مسؤول</span></div>
+          {adminOverview && <div className="admin-stats">
+            <div><strong>{adminOverview.users}</strong><small>المستخدمون</small></div>
+            <div><strong>{adminOverview.exercises}</strong><small>التمارين</small></div>
+            <div><strong>{adminOverview.publishedExercises}</strong><small>تمارين منشورة</small></div>
+            <div><strong>{adminOverview.draftExercises}</strong><small>مسودات</small></div>
+            <div><strong>{adminOverview.plans}</strong><small>الخطط</small></div>
+            <div><strong>{adminOverview.workouts}</strong><small>جلسات التدريب</small></div>
+            <div><strong>{adminOverview.nutritionLogs}</strong><small>سجلات التغذية</small></div>
+          </div>}
+          <h3 className="admin-subtitle">إدارة مكتبة التمارين</h3>
+          <div className="history-list">{adminExercises.map((exercise) => <div className="history-row" key={exercise.id}>
+            <div><strong>{exercise.nameAr}</strong><p>{exercise.nameEn} · {exercise.difficulty} · {exercise.slug}</p></div>
+            <div className="plan-actions"><span className={exercise.status === 'PUBLISHED' ? 'status done' : 'status'}>{exercise.status === 'PUBLISHED' ? 'منشور' : exercise.status === 'DRAFT' ? 'مسودة' : 'مؤرشف'}</span>
+              {exercise.status !== 'PUBLISHED' && <button className="outline" disabled={busy} onClick={() => changeExerciseStatus(exercise.id, 'PUBLISHED')}>نشر</button>}
+              {exercise.status !== 'ARCHIVED' && <button className="outline" disabled={busy} onClick={() => changeExerciseStatus(exercise.id, 'ARCHIVED')}>أرشفة</button>}
+            </div>
+          </div>)}</div>
+        </section>}
         <section className="panel nutrition-panel">
           <div className="section-heading"><div><p className="eyebrow">NUTRITION TRACKER</p><h2>متابعة التغذية</h2></div><span className="pill">{nutritionLogs.length} سجلات</span></div>
           <p className="muted">سجّل السعرات والعناصر الغذائية التي تعرفها. لا يتم افتراض قيم غذائية غير مدخلة.</p>

@@ -9,6 +9,8 @@ on:
 jobs:
   api-build:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://zyvon:zyvon_ci_password@localhost:5432/zyvon_ci
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

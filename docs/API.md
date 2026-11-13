@@ -49,8 +49,8 @@ The current generator is a deterministic starter-plan feature. It is not the AI 
 - GET `/exercises/:exerciseId`
 - Admin only:
   - POST `/admin/exercises`
-  - PATCH `/admin/exercises/:exerciseId`
-  - POST `/admin/exercises/:exerciseId/publish`
+  - PATCH `/admin/exercises/:exerciseId` — update bilingual exercise content, equipment, muscles, difficulty, and safety notes.
+  - PATCH `/admin/exercises/:exerciseId/status` — set `DRAFT`, `PUBLISHED`, or `ARCHIVED`.
 
 ## Workout logging
 - POST `/workouts` — start session.

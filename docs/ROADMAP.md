@@ -36,6 +36,7 @@
 - [x] Operator-only admin account promotion script; public signup cannot assign admin role.
 - [x] Docker Compose deployment foundation for PostgreSQL, API, and web/PWA; CI builds both images.
 - [x] Role-protected administrator metrics and exercise publishing/archive workflow.
+- [x] Role-protected API endpoint for editing bilingual exercise content and safety metadata.
 - [x] CI typechecks the mobile client and exports Android/iOS JavaScript bundles.
 - [x] Authenticated server-side AI coach endpoint with provider configuration kept on the API.
 - [x] Arabic-first web chat panel with clear rule-based fallback labeling when no AI key is configured.
@@ -44,6 +45,7 @@
 - [x] Equipment alias normalization (Arabic/English) and strict all-required-equipment matching in plan generation.
 - [x] Mobile active-session restoration now reloads saved sets and uses the highest existing set number to avoid duplicate numbering.
 - [x] Mobile nutrition screen shows same-day calorie and macro totals from user-entered logs.
+- [x] Mobile training screen restores active-session sets and displays saved set details after reload.
 - [x] Web nutrition entry form and recent-log history.
 - [ ] Verify CI for the latest plan-generator and mobile-client commits.
 - [ ] Add database-backed integration tests using a disposable PostgreSQL service.

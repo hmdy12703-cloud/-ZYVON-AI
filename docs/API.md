@@ -90,6 +90,7 @@ AI responses must be validated server-side. Never expose provider API keys to cl
 - DELETE `/nutrition/logs/:logId`
 
 ## Administration
+- GET `/admin/feedback` — administrator-only latest user ratings and comments.
 - GET `/admin/overview`
 - GET `/admin/users`
 - GET `/admin/content/exercises`

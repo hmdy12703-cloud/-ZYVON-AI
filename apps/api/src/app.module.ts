@@ -9,6 +9,7 @@ import { PlansModule } from './plans/plans.module';
 import { CoachModule } from './coach/coach.module';
 import { NutritionModule } from './nutrition/nutrition.module';
 import { AdminModule } from './admin/admin.module';
+import { FeedbackModule } from './feedback/feedback.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AdminModule } from './admin/admin.module';
     CoachModule,
     NutritionModule,
     AdminModule,
+    FeedbackModule,
   ],
   controllers: [HealthController],
 })

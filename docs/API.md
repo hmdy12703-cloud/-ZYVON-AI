@@ -41,6 +41,7 @@ Error:
 - POST `/plans/generate` — create a first-pass rule-based draft from the user's profile and published exercises for their experience level.
 - GET `/plans/:planId` — retrieve an owned plan and its ordered days/exercises.
 - POST `/plans/:planId/activate` — activate an owned plan and archive the user's previously active plan.
+- GET `/plans/progression/recommendations` — conservative suggestions based on the user's two most recent completed sessions; suppresses progression when pain-related feedback or very high effort is recorded.
 
 The current generator is a deterministic starter-plan feature. It is not the AI Coach and does not replace individualized professional assessment.
 
@@ -51,6 +52,10 @@ The current generator is a deterministic starter-plan feature. It is not the AI 
   - POST `/admin/exercises`
   - PATCH `/admin/exercises/:exerciseId` — update bilingual exercise content, equipment, muscles, difficulty, and safety notes.
   - PATCH `/admin/exercises/:exerciseId/status` — set `DRAFT`, `PUBLISHED`, or `ARCHIVED`.
+
+## User feedback
+- POST `/feedback` — submit an authenticated rating (1–5) and optional comment.
+- GET `/feedback/mine` — list only the signed-in user's latest feedback entries.
 
 ## Workout logging
 - POST `/workouts` — start session.

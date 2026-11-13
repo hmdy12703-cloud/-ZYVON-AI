@@ -27,3 +27,5 @@ jobs:
         run: pnpm --filter @zyvon/database db:generate
       - name: Build API
         run: pnpm --filter @zyvon/api build
+      - name: Run API validation tests
+        run: pnpm --filter @zyvon/api test

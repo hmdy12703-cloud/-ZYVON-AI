@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AddWorkoutSetDto } from './dto/add-workout-set.dto';
 import { ListWorkoutsDto } from './dto/list-workouts.dto';
 import { StartWorkoutDto } from './dto/start-workout.dto';
+import { CompleteWorkoutDto } from './dto/complete-workout.dto';
 
 @Injectable()
 export class WorkoutsService {
@@ -109,10 +110,15 @@ export class WorkoutsService {
     });
   }
 
-  async complete(userId: string, workoutId: string) {
+  async complete(userId: string, workoutId: string, dto: CompleteWorkoutDto) {
     const result = await this.prisma.workoutSession.updateMany({
       where: { id: workoutId, userId, status: WorkoutStatus.IN_PROGRESS },
-      data: { status: WorkoutStatus.COMPLETED, completedAt: new Date() },
+      data: {
+        status: WorkoutStatus.COMPLETED,
+        completedAt: new Date(),
+        ...(dto.perceivedEffort !== undefined ? { perceivedEffort: dto.perceivedEffort } : {}),
+        ...(dto.feedback !== undefined ? { feedback: dto.feedback.trim() || null } : {}),
+      },
     });
     if (result.count === 0) throw new NotFoundException('Active workout not found');
     return this.get(userId, workoutId);

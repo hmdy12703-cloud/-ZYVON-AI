@@ -18,6 +18,7 @@ type CoachMessage = { role: 'user' | 'coach'; text: string };
 type Exercise = { id: string; nameAr: string; nameEn: string; descriptionAr: string; difficulty: string };
 type Workout = { id: string; status: string; startedAt: string; _count?: { sets: number } };
 type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; exercise?: { nameAr: string; nameEn: string } };
+type TrainingPlan = { id: string; title: string; goal: string; status: string; startDate?: string | null; _count?: { days: number }; days?: Array<{ id: string; dayNumber: number; title?: string | null; exercises: Array<{ id: string; sets: number; reps: string; restSeconds: number; exercise: { id: string; nameAr: string; nameEn: string; difficulty: string } }> }> };
 type Progression = { basedOnSessions: number; recommendations: Array<{ exerciseId: string; action: string; suggestedLoadKg: number | null; reason: string }>; safetyMessage: string };
 type NutritionLog = { id: string; calories?: number; proteinGrams?: number; carbsGrams?: number; fatGrams?: number; loggedAt: string; notes?: string };
 type Profile = { displayName: string; heightCm: string; weightKg: string; goal: string; experienceLevel: string; trainingDaysPerWeek: string; sessionMinutes: string; equipment: string; safetyNotes: string };
@@ -37,7 +38,7 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [mode, setMode] = useState('RULE_BASED');
-  const [screen, setScreen] = useState<'home' | 'profile' | 'training' | 'nutrition' | 'coach' | 'feedback'>('home');
+  const [screen, setScreen] = useState<'home' | 'profile' | 'training' | 'nutrition' | 'coach' | 'feedback' | 'plans'>('home');
   const [feedbackRating, setFeedbackRating] = useState('5');
   const [feedbackComment, setFeedbackComment] = useState('');
   const [profile, setProfile] = useState<Profile>(emptyProfile);
@@ -52,6 +53,8 @@ export default function App() {
   const [sessionFeedback, setSessionFeedback] = useState('');
   const [nutrition, setNutrition] = useState<NutritionLog[]>([]);
   const [progression, setProgression] = useState<Progression | null>(null);
+  const [plans, setPlans] = useState<TrainingPlan[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<TrainingPlan | null>(null);
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
   const [carbs, setCarbs] = useState('');
@@ -76,11 +79,12 @@ export default function App() {
     setBusy(true);
     setError('');
     try {
-      const [savedProfile, exerciseResult, workoutResult, nutritionResult] = await Promise.all([
+      const [savedProfile, exerciseResult, workoutResult, nutritionResult, planResult] = await Promise.all([
         request('/users/me/profile').catch(() => null),
         request('/exercises?limit=30'),
         request('/workouts?limit=20'),
         request('/nutrition/logs'),
+        request('/plans').catch(() => []),
       ]);
       if (savedProfile) setProfile({
         ...emptyProfile,
@@ -93,6 +97,7 @@ export default function App() {
         safetyNotes: savedProfile.safetyNotes || '',
       });
       setExercises(exerciseResult.data || []);
+      setPlans(Array.isArray(planResult) ? planResult : []);
       const sessions: Workout[] = workoutResult.data || [];
       setWorkouts(sessions);
       const activeId = sessions.find((item) => item.status === 'IN_PROGRESS')?.id || '';
@@ -155,6 +160,48 @@ export default function App() {
       setScreen('home');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to save profile');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function generatePlan() {
+    setBusy(true);
+    setError('');
+    try {
+      const plan = await request('/plans/generate', { method: 'POST' });
+      setSelectedPlan(plan);
+      setPlans((current) => [plan, ...current.filter((item) => item.id !== plan.id)]);
+      setScreen('plans');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر إنشاء الخطة');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function openPlan(planId: string) {
+    setBusy(true);
+    setError('');
+    try {
+      const plan = await request(`/plans/${planId}`);
+      setSelectedPlan(plan);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر تحميل تفاصيل الخطة');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function activatePlan(planId: string) {
+    setBusy(true);
+    setError('');
+    try {
+      const plan = await request(`/plans/${planId}/activate`, { method: 'POST' });
+      setSelectedPlan(plan);
+      setPlans((current) => current.map((item) => item.id === planId ? { ...item, status: 'ACTIVE' } : { ...item, status: item.status === 'ACTIVE' ? 'ARCHIVED' : item.status }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر تفعيل الخطة');
     } finally {
       setBusy(false);
     }
@@ -290,6 +337,7 @@ export default function App() {
     { key: 'home', label: 'الرئيسية' },
     { key: 'profile', label: 'ملفي' },
     { key: 'training', label: 'التمرين' },
+    { key: 'plans', label: 'خططي' },
     { key: 'nutrition', label: 'التغذية' },
     { key: 'coach', label: 'المدرب' },
     { key: 'feedback', label: 'تقييم التطبيق' },
@@ -352,6 +400,26 @@ export default function App() {
               <TextInput style={styles.input} value={profile.equipment} onChangeText={(v) => updateProfile('equipment', v)} placeholder="المعدات، افصل بفاصلة" placeholderTextColor="#8293aa" />
               <TextInput style={styles.input} value={profile.safetyNotes} onChangeText={(v) => updateProfile('safetyNotes', v)} placeholder="ملاحظات السلامة أو القيود" placeholderTextColor="#8293aa" multiline />
               <Pressable style={styles.primary} onPress={saveProfile} disabled={busy}><Text style={styles.primaryText}>حفظ الملف الرياضي</Text></Pressable>
+            </View>}
+            {screen === 'plans' && <View style={styles.card}>
+              <Text style={styles.title}>خططي التدريبية</Text>
+              <Text style={styles.muted}>أنشئ خطة وفق ملفك الرياضي ومستواك والمعدات المتاحة، ثم راجع أيامها قبل التفعيل.</Text>
+              <Pressable style={styles.primary} onPress={generatePlan} disabled={busy}><Text style={styles.primaryText}>إنشاء خطة ذكية</Text></Pressable>
+              {plans.length === 0 && <Text style={styles.muted}>لا توجد خطط محفوظة بعد. أكمل ملفك الرياضي أولًا ثم أنشئ خطتك.</Text>}
+              {plans.map((plan) => <View key={plan.id} style={styles.exercise}>
+                <Text style={styles.exerciseName}>{plan.title}</Text>
+                <Text style={styles.muted}>الهدف: {plan.goal} · الأيام: {plan._count?.days ?? plan.days?.length ?? '—'} · الحالة: {plan.status === 'ACTIVE' ? 'نشطة' : plan.status === 'DRAFT' ? 'مسودة' : 'مؤرشفة'}</Text>
+                <Pressable onPress={() => openPlan(plan.id)}><Text style={styles.link}>عرض التفاصيل</Text></Pressable>
+                {plan.status !== 'ACTIVE' && <Pressable onPress={() => activatePlan(plan.id)} disabled={busy}><Text style={styles.link}>تفعيل الخطة</Text></Pressable>}
+              </View>)}
+              {selectedPlan && <View style={styles.exercise}>
+                <Text style={styles.subtitle}>تفاصيل {selectedPlan.title}</Text>
+                {(selectedPlan.days || []).map((day) => <View key={day.id}>
+                  <Text style={styles.exerciseName}>اليوم {day.dayNumber}{day.title ? ` — ${day.title}` : ''}</Text>
+                  {day.exercises.map((entry) => <Text key={entry.id} style={styles.muted}>{entry.exercise.nameAr || entry.exercise.nameEn} · {entry.sets} مجموعات · {entry.reps} تكرار · راحة {entry.restSeconds} ثانية</Text>)}
+                </View>)}
+                {selectedPlan.status !== 'ACTIVE' && <Pressable style={styles.primary} onPress={() => activatePlan(selectedPlan.id)} disabled={busy}><Text style={styles.primaryText}>تفعيل هذه الخطة</Text></Pressable>}
+              </View>}
             </View>}
             {screen === 'training' && <View style={styles.card}>
               <Text style={styles.title}>سجل التدريب</Text>

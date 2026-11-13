@@ -1,0 +1,17 @@
+{
+  "app.name": "ZYVON AI",
+  "app.tagline": "كن أقوى. كن أفضل.",
+  "nav.home": "الرئيسية",
+  "nav.workouts": "التمارين",
+  "nav.progress": "التقدم",
+  "nav.coach": "المدرب الذكي",
+  "nav.profile": "الملف الشخصي",
+  "onboarding.title": "لنبدأ رحلتك",
+  "onboarding.goal": "ما هدفك الأساسي؟",
+  "onboarding.level": "مستواك التدريبي",
+  "onboarding.days": "كم يومًا تستطيع التدريب أسبوعيًا؟",
+  "onboarding.duration": "مدة التمرين بالدقائق",
+  "common.continue": "متابعة",
+  "common.save": "حفظ",
+  "common.cancel": "إلغاء"
+}

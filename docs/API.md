@@ -37,11 +37,12 @@ Error:
 - POST `/users/me/onboarding`
 
 ## Training plans
-- GET `/plans` — current user's plans.
-- POST `/plans/generate` — request a validated starter plan.
-- GET `/plans/:planId`
-- PATCH `/plans/:planId` — only permitted plan fields.
-- POST `/plans/:planId/activate`
+- GET `/plans` — list only the authenticated user's plans.
+- POST `/plans/generate` — create a first-pass rule-based draft from the user's profile and published exercises for their experience level.
+- GET `/plans/:planId` — retrieve an owned plan and its ordered days/exercises.
+- POST `/plans/:planId/activate` — activate an owned plan and archive the user's previously active plan.
+
+The current generator is a deterministic starter-plan feature. It is not the AI Coach and does not replace individualized professional assessment.
 
 ## Exercise library
 - GET `/exercises` — published exercises, searchable and filterable.

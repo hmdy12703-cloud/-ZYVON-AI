@@ -17,7 +17,7 @@ export class ProfileService {
     const { equipment, birthDate, ...fields } = dto;
     const data: Prisma.UserProfileUpdateInput = {
       ...fields,
-      ...(birthDate !== undefined ? { birthDate: new Date(birthDate) } : {}),
+      ...(birthDate === null ? { birthDate: null } : birthDate !== undefined ? { birthDate: new Date(birthDate) } : {}),
       ...(equipment !== undefined
         ? { equipment: equipment as Prisma.InputJsonValue }
         : {}),

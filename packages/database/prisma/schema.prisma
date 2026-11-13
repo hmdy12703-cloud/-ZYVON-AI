@@ -7,18 +7,66 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole { USER ADMIN }
-enum UserStatus { ACTIVE SUSPENDED }
-enum Language { ar en }
-enum FitnessGoal { FAT_LOSS MUSCLE_GAIN STRENGTH ENDURANCE MOBILITY GENERAL }
-enum ExperienceLevel { BEGINNER INTERMEDIATE ADVANCED }
-enum PlanStatus { DRAFT ACTIVE COMPLETED ARCHIVED }
-enum ExerciseStatus { DRAFT PUBLISHED ARCHIVED }
-enum MediaType { IMAGE VIDEO AUDIO }
-enum WorkoutStatus { IN_PROGRESS COMPLETED ABANDONED }
-enum CoachChannel { TEXT VOICE }
-enum MessageRole { USER ASSISTANT SYSTEM }
-enum SafetyStatus { PENDING PASSED FLAGGED }
+enum UserRole {
+  USER
+  ADMIN
+}
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+enum Language {
+  ar
+  en
+}
+enum FitnessGoal {
+  FAT_LOSS
+  MUSCLE_GAIN
+  STRENGTH
+  ENDURANCE
+  MOBILITY
+  GENERAL
+}
+enum ExperienceLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+enum PlanStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+enum ExerciseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+enum MediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+}
+enum WorkoutStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+enum CoachChannel {
+  TEXT
+  VOICE
+}
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+enum SafetyStatus {
+  PENDING
+  PASSED
+  FLAGGED
+}
 
 model User {
   id           String           @id @default(uuid()) @db.Uuid

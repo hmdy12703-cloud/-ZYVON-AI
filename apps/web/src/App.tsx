@@ -31,6 +31,8 @@ type Workout = { id: string; startedAt: string; completedAt: string | null; stat
 type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; completed: boolean; exercise?: { nameAr: string; nameEn: string } };
 type WorkoutDetail = { id: string; status: string; sets: WorkoutSet[] };
 type TrainingPlan = { id: string; title: string; goal: string; status: string; _count?: { days: number } };
+type ProgressionItem = { exerciseId: string; action: 'ADD_ONE_REP' | 'SMALL_LOAD_INCREASE' | 'HOLD'; suggestedLoadKg: number | null; reason: string };
+type ProgressionResult = { basedOnSessions: number; recommendations: ProgressionItem[]; safetyMessage: string };
 type AdminOverview = { users: number; exercises: number; publishedExercises: number; draftExercises: number; plans: number; workouts: number; nutritionLogs: number };
 type AdminExercise = { id: string; slug: string; nameAr: string; nameEn: string; difficulty: string; status: string };
 type NutritionLog = { id: string; loggedAt: string; calories: number | null; proteinGrams: number | null; carbsGrams: number | null; fatGrams: number | null; notes: string | null };
@@ -74,6 +76,7 @@ export default function App() {
   const [coachMessages, setCoachMessages] = useState<CoachMessage[]>([]);
   const [nutritionLogs, setNutritionLogs] = useState<NutritionLog[]>([]);
   const [adminOverview, setAdminOverview] = useState<AdminOverview | null>(null);
+  const [progression, setProgression] = useState<ProgressionResult | null>(null);
   const [adminExercises, setAdminExercises] = useState<AdminExercise[]>([]);
   const [coachInput, setCoachInput] = useState('');
   const [coachMode, setCoachMode] = useState<'AI' | 'RULE_BASED' | null>(null);
@@ -109,6 +112,7 @@ export default function App() {
       setWorkouts(workoutItems);
       setPlans(Array.isArray(planList) ? planList : []);
       setNutritionLogs(Array.isArray(nutrition) ? nutrition : []);
+      try { setProgression(await api('/plans/progression/recommendations')); } catch { setProgression(null); }
       const inProgress = workoutItems.find((item) => item.status === 'IN_PROGRESS');
       if (inProgress) {
         const detail: WorkoutDetail = await api(`/workouts/${inProgress.id}`);
@@ -483,6 +487,14 @@ export default function App() {
           {plans.length ? <div className="history-list">{plans.map((plan) => <div className="history-row" key={plan.id}><div><strong>{plan.title}</strong><p>{plan._count?.days ?? 0} أيام · {plan.goal}</p></div><div className="plan-actions"><span className={plan.status === 'ACTIVE' ? 'status done' : 'status'}>{plan.status === 'ACTIVE' ? 'نشطة' : plan.status === 'DRAFT' ? 'مسودة' : plan.status}</span><button className="outline" disabled={busy} onClick={() => viewPlan(plan.id)}>التفاصيل</button>{plan.status !== 'ACTIVE' && <button className="outline" disabled={busy} onClick={() => activatePlan(plan.id)}>تفعيل</button>}</div></div>)}</div> : <p className="muted">أنشئ خطة أولية بناءً على ملفك الرياضي والتمارين المنشورة.</p>}
         </section>
         {selectedPlan && <section className="panel plan-detail-panel"><div className="section-heading"><div><p className="eyebrow">PLAN DETAILS</p><h2>{selectedPlan.title}</h2></div><button className="ghost" onClick={() => setSelectedPlan(null)}>إغلاق</button></div><div className="plan-days">{selectedPlan.days.map((day) => <article className="plan-day" key={day.id}><h3>{day.title}</h3>{day.notes && <p className="muted">{day.notes}</p>}{day.exercises.map((item) => <div className="plan-exercise" key={item.id}><div><strong>{item.exercise.nameAr}</strong><small>{item.exercise.nameEn}</small></div><span>{item.sets} مجموعات × {item.repsMin}–{item.repsMax}</span><span>راحة {item.restSeconds} ث</span></div>)}</article>)}</div></section>}
+        {progression && <section className="panel progression-panel">
+          <div className="section-heading"><div><p className="eyebrow">SMART PROGRESSION</p><h2>توصيات تطور الأداء</h2></div><span className="pill">{progression.basedOnSessions} جلسات مرجعية</span></div>
+          {progression.recommendations.length ? <div className="history-list">{progression.recommendations.map((item) => {
+            const exercise = exercises.find((candidate) => candidate.id === item.exerciseId);
+            return <div className="history-row" key={item.exerciseId}><div><strong>{exercise?.nameAr || exercise?.nameEn || 'تمرين'}</strong><p>{item.reason}</p></div><span className="status">{item.action === 'SMALL_LOAD_INCREASE' ? `وزن مقترح: ${item.suggestedLoadKg} كجم` : item.action === 'ADD_ONE_REP' ? 'أضف تكرارًا واحدًا' : 'حافظ على المستوى'}</span></div>;
+          })}</div> : <p className="muted">نحتاج جلستين مكتملتين للتمرين نفسه قبل تقديم توصية تطور.</p>}
+          <small className="muted">{progression.safetyMessage}</small>
+        </section>}
         {user.role === 'ADMIN' && <section className="panel admin-panel">
           <div className="section-heading"><div><p className="eyebrow">ADMINISTRATION</p><h2>لوحة إدارة ZYVON</h2></div><span className="pill">مسؤول</span></div>
           {adminOverview && <div className="admin-stats">

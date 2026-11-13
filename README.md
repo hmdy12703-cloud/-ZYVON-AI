@@ -171,6 +171,9 @@ The repository now includes a NestJS API under `apps/api`:
 - `POST /api/v1/auth/login` — verify credentials and issue a short-lived JWT.
 - `GET /api/v1/users/me` — protected route requiring `Authorization: Bearer <token>`; checks the account is still active in PostgreSQL.
 - `GET /api/v1/users/me/profile` — retrieve the signed-in user's fitness profile.
+
+- `GET /api/v1/exercises` — public, paginated catalog of published exercises; supports `page`, `limit`, `q`, and `difficulty` filters.
+- `GET /api/v1/exercises/:slug` — public details for one published exercise, including bilingual instructions, safety notes, and media.
 - `PATCH /api/v1/users/me/profile` — create or update onboarding data (display name, birth date, height, weight, language, goal, experience, weekly training days, session duration, equipment, and optional safety notes). Only the authenticated user's own profile can be changed; unknown fields are rejected.
 
 ### Run locally
@@ -193,3 +196,7 @@ A GitHub Actions workflow has been added to validate the Prisma schema and compi
 The profile endpoints are protected by the JWT guard. `PATCH` validates input and rejects unknown properties; supported ranges include height 100–230 cm, weight 25–350 kg, training 1–7 days/week, and sessions 10–180 minutes. Equipment is limited to 30 short labels, and optional safety notes are limited to 1,000 characters. A first profile can be created without a display name; the account email prefix is used as a temporary default. The profile endpoint returns only the signed-in user's record.
 
 Build verification is pending until the latest GitHub Actions run completes. No live database integration test has been performed.
+
+### Exercise catalog API
+
+Only exercises with `PUBLISHED` status are visible through the public catalog. The list endpoint returns a stable page/limit pagination envelope and supports text search across Arabic/English names and slug, plus experience-level filtering. Draft and archived exercises are never exposed. The detail endpoint returns bilingual instructions, safety notes, and ordered media for the selected published exercise.

@@ -34,5 +34,6 @@ import { ProfileService } from '../profile/profile.service';
   ],
   controllers: [AuthController, MeController, ProfileController],
   providers: [AuthService, JwtAuthGuard, ProfileService],
+  exports: [JwtModule, JwtAuthGuard],
 })
 export class AuthModule {}

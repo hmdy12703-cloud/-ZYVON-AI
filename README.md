@@ -161,3 +161,26 @@ The repository now contains the product specification and the first monorepo/dat
 
 ### Phone-only workflow
 Open the repository in GitHub on your phone to review files and commits. For running builds and tests without a computer, use a browser-based development environment that supports Node.js and pnpm; do not paste secrets into public files or chat.
+
+
+## Backend API — first implementation slice
+
+The repository now includes a NestJS API under `apps/api`:
+- `GET /api/v1/health` — health check.
+- `POST /api/v1/auth/register` — create an account using a bcrypt password hash.
+- `POST /api/v1/auth/login` — verify credentials and issue a short-lived JWT.
+- `GET /api/v1/users/me` — protected route requiring `Authorization: Bearer <token>`; checks the account is still active in PostgreSQL.
+
+### Run locally
+1. Install Node.js 20+ and pnpm 9.
+2. Start PostgreSQL and create a database named `zyvon_ai`.
+3. Copy `apps/api/.env.example` to `apps/api/.env` (or configure the same variables in the process environment).
+4. Set `DATABASE_URL` and a unique `JWT_ACCESS_SECRET` with at least 32 characters.
+5. Run `pnpm install`.
+6. Run `pnpm --filter @zyvon/database db:generate`.
+7. Run `pnpm --filter @zyvon/api dev`.
+
+The API listens on port 4000 by default. For deployment, use HTTPS, a secret manager, a production database, rate limiting, refresh-token/session management, email verification, password reset, and security monitoring. Do not use sample secrets in production.
+
+### Verification status
+A GitHub Actions workflow has been added to validate the Prisma schema and compile the API on pushes and pull requests. The workflow must run in GitHub before this slice can be marked build-verified. A live PostgreSQL integration test has not yet been run.

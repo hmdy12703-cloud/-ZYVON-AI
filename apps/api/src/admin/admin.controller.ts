@@ -19,6 +19,11 @@ export class AdminController {
     return this.admin.overview();
   }
 
+  @Get('feedback')
+  listFeedback() {
+    return this.admin.listFeedback();
+  }
+
   @Get('exercises')
   listExercises() {
     return this.admin.listExercises();

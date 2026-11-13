@@ -36,9 +36,9 @@ export class AuthService {
       data: {
         email,
         passwordHash,
-        profile: dto.displayName
-          ? { create: { displayName: dto.displayName } }
-          : undefined,
+        ...(dto.displayName
+          ? { profile: { create: { displayName: dto.displayName } } }
+          : {}),
       },
       select: { id: true, email: true, role: true },
     });

@@ -17,7 +17,7 @@ const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000/
 type CoachMessage = { role: 'user' | 'coach'; text: string };
 type Exercise = { id: string; nameAr: string; nameEn: string; descriptionAr: string; difficulty: string };
 type Workout = { id: string; status: string; startedAt: string; _count?: { sets: number } };
-type WorkoutDetail = { id: string; status: string; startedAt: string; completedAt?: string | null; perceivedEffort?: number | null; feedback?: string | null; sets: WorkoutSet[] };
+type WorkoutDetail = { id: string; status: string; startedAt: string; completedAt?: string | null; perceivedEffort?: number | null; feedback?: string | null; planDay?: { id: string; dayNumber: number; title: string; exercises: Array<{ exerciseId: string }> } | null; sets: WorkoutSet[] };
 type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; exercise?: { nameAr: string; nameEn: string } };
 type TrainingPlan = { id: string; title: string; goal: string; status: string; startDate?: string | null; _count?: { days: number }; days?: Array<{ id: string; dayNumber: number; title?: string | null; exercises: Array<{ id: string; sets: number; repsMin: number; repsMax: number; durationSeconds?: number | null; restSeconds: number; exercise: { id: string; nameAr: string; nameEn: string; difficulty: string } }> }> };
 type WorkoutProgress = { sessions: Array<{ id: string; completedAt: string | null; completedSets: number; volumeKg: number }>; totals: { completedSessions: number; completedSets: number; volumeKg: number } };
@@ -49,6 +49,7 @@ export default function App() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [activeWorkout, setActiveWorkout] = useState('');
   const [activeSets, setActiveSets] = useState<WorkoutSet[]>([]);
+  const [activePlanExerciseIds, setActivePlanExerciseIds] = useState<string[]>([]);
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutDetail | null>(null);
   const [selectedExercise, setSelectedExercise] = useState('');
   const [reps, setReps] = useState('10');
@@ -110,8 +111,10 @@ export default function App() {
       if (activeId) {
         const detail = await request(`/workouts/${activeId}`);
         setActiveSets(Array.isArray(detail.sets) ? detail.sets : []);
+        setActivePlanExerciseIds(detail.planDay?.exercises.map((item) => item.exerciseId) ?? []);
       } else {
         setActiveSets([]);
+        setActivePlanExerciseIds([]);
       }
       setNutrition(Array.isArray(nutritionResult) ? nutritionResult : []);
       const [progressionResult, progressResult] = await Promise.all([
@@ -229,11 +232,11 @@ export default function App() {
     }
   }
 
-  async function startWorkout(trainingPlanId?: string) {
+  async function startWorkout(trainingPlanId?: string, planDayId?: string) {
     setBusy(true);
     setError('');
     try {
-      const result = await request('/workouts', { method: 'POST', body: JSON.stringify(trainingPlanId ? { trainingPlanId } : {}) });
+      const result = await request('/workouts', { method: 'POST', body: JSON.stringify({ ...(trainingPlanId ? { trainingPlanId } : {}), ...(planDayId ? { planDayId } : {}) }) });
       setActiveWorkout(result.id);
       setScreen('training');
       await loadDashboard();
@@ -448,9 +451,9 @@ export default function App() {
                 {(selectedPlan.days || []).map((day) => <View key={day.id}>
                   <Text style={styles.exerciseName}>اليوم {day.dayNumber}{day.title ? ` — ${day.title}` : ''}</Text>
                   {day.exercises.map((entry) => <Text key={entry.id} style={styles.muted}>{entry.exercise.nameAr || entry.exercise.nameEn} · {entry.sets} مجموعات · {entry.repsMin}–{entry.repsMax} تكرار{entry.durationSeconds ? ` · مدة ${entry.durationSeconds} ثانية` : ''} · راحة {entry.restSeconds} ثانية</Text>)}
+                  {selectedPlan.status === 'ACTIVE' && !activeWorkout && <Pressable style={styles.primary} onPress={() => startWorkout(selectedPlan.id, day.id)} disabled={busy}><Text style={styles.primaryText}>ابدأ تدريب اليوم {day.dayNumber}</Text></Pressable>}
                 </View>)}
                 {selectedPlan.status !== 'ACTIVE' && <Pressable style={styles.primary} onPress={() => activatePlan(selectedPlan.id)} disabled={busy}><Text style={styles.primaryText}>تفعيل هذه الخطة</Text></Pressable>}
-                {selectedPlan.status === 'ACTIVE' && !activeWorkout && <Pressable style={styles.primary} onPress={() => startWorkout(selectedPlan.id)} disabled={busy}><Text style={styles.primaryText}>ابدأ جلسة مرتبطة بالخطة</Text></Pressable>}
               </View>}
             </View>}
             {screen === 'training' && <View style={styles.card}>
@@ -458,7 +461,7 @@ export default function App() {
               {!activeWorkout ? <Pressable style={styles.primary} onPress={() => startWorkout()} disabled={busy}><Text style={styles.primaryText}>ابدأ جلسة جديدة</Text></Pressable> : <>
                 <Text style={styles.pill}>جلسة نشطة</Text>
                 <Text style={styles.muted}>اختر تمرينًا وسجّل المجموعة بعد إتمامها.</Text>
-                <View style={styles.exerciseList}>{exercises.map((exercise) => <Pressable key={exercise.id} style={[styles.exercise, selectedExercise === exercise.id && styles.choiceActive]} onPress={() => setSelectedExercise(exercise.id)}><Text style={styles.exerciseName}>{exercise.nameAr}</Text><Text style={styles.muted}>{exercise.nameEn}</Text></Pressable>)}</View>
+                <View style={styles.exerciseList}>{exercises.filter((exercise) => activePlanExerciseIds.length === 0 || activePlanExerciseIds.includes(exercise.id)).map((exercise) => <Pressable key={exercise.id} style={[styles.exercise, selectedExercise === exercise.id && styles.choiceActive]} onPress={() => setSelectedExercise(exercise.id)}><Text style={styles.exerciseName}>{exercise.nameAr}</Text><Text style={styles.muted}>{exercise.nameEn}</Text></Pressable>)}</View>
                 <Text style={styles.subtitle}>المجموعات المسجلة</Text>
                 {activeSets.length === 0 ? <Text style={styles.muted}>لم تُسجل مجموعات بعد.</Text> : activeSets.map((item) => <View key={item.id} style={styles.exercise}><Text style={styles.exerciseName}>{item.exercise?.nameAr || item.exercise?.nameEn || 'تمرين'} · المجموعة {item.setNumber}</Text><Text style={styles.muted}>{item.reps ?? '—'} تكرار · {item.loadKg ?? '—'} كجم</Text></View>)}
                 <View style={styles.row}><TextInput style={styles.inputHalf} value={reps} onChangeText={setReps} keyboardType="number-pad" placeholder="التكرارات" placeholderTextColor="#8293aa" /><TextInput style={styles.inputHalf} value={loadKg} onChangeText={setLoadKg} keyboardType="decimal-pad" placeholder="الوزن كجم (اختياري)" placeholderTextColor="#8293aa" /></View>

@@ -12,9 +12,20 @@ export class WorkoutsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async start(userId: string, dto: StartWorkoutDto) {
-    if (dto.trainingPlanId) {
+    let trainingPlanId = dto.trainingPlanId;
+    if (dto.planDayId) {
+      const day = await this.prisma.planDay.findFirst({
+        where: { id: dto.planDayId, trainingPlan: { userId } },
+        select: { id: true, trainingPlanId: true },
+      });
+      if (!day) throw new NotFoundException('Training plan day not found');
+      if (trainingPlanId && trainingPlanId !== day.trainingPlanId) {
+        throw new BadRequestException('The selected day does not belong to this training plan');
+      }
+      trainingPlanId = day.trainingPlanId;
+    } else if (trainingPlanId) {
       const plan = await this.prisma.trainingPlan.findFirst({
-        where: { id: dto.trainingPlanId, userId },
+        where: { id: trainingPlanId, userId },
         select: { id: true },
       });
       if (!plan) throw new NotFoundException('Training plan not found');
@@ -22,9 +33,10 @@ export class WorkoutsService {
     return this.prisma.workoutSession.create({
       data: {
         userId,
-        ...(dto.trainingPlanId ? { trainingPlanId: dto.trainingPlanId } : {}),
+        ...(trainingPlanId ? { trainingPlanId } : {}),
+        ...(dto.planDayId ? { planDayId: dto.planDayId } : {}),
       },
-      select: { id: true, trainingPlanId: true, startedAt: true, status: true },
+      select: { id: true, trainingPlanId: true, planDayId: true, startedAt: true, status: true },
     });
   }
 
@@ -83,6 +95,7 @@ export class WorkoutsService {
     const workout = await this.prisma.workoutSession.findFirst({
       where: { id: workoutId, userId },
       include: {
+        planDay: { select: { id: true, dayNumber: true, title: true, exercises: { select: { exerciseId: true } } } },
         sets: {
           orderBy: [{ setNumber: 'asc' }, { id: 'asc' }],
           include: {
@@ -101,7 +114,7 @@ export class WorkoutsService {
     }
     const workout = await this.prisma.workoutSession.findFirst({
       where: { id: workoutId, userId, status: WorkoutStatus.IN_PROGRESS },
-      select: { id: true },
+      select: { id: true, planDayId: true },
     });
     if (!workout) throw new NotFoundException('Active workout not found');
 
@@ -110,6 +123,15 @@ export class WorkoutsService {
       select: { id: true },
     });
     if (!exercise) throw new NotFoundException('Published exercise not found');
+    if (workout.planDayId) {
+      const assignment = await this.prisma.planExercise.findFirst({
+        where: { planDayId: workout.planDayId, exerciseId: dto.exerciseId },
+        select: { id: true },
+      });
+      if (!assignment) {
+        throw new BadRequestException('Exercise is not assigned to the selected training plan day');
+      }
+    }
 
     return this.prisma.workoutSet.create({
       data: {

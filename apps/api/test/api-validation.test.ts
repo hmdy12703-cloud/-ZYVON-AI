@@ -70,3 +70,14 @@ test('rejects out-of-range post-workout effort and oversized feedback', async ()
   assert.ok(errors.some((error) => error.property === 'perceivedEffort'));
   assert.ok(errors.some((error) => error.property === 'feedback'));
 });
+
+
+test('accepts an optional training plan day UUID when starting a workout', async () => {
+  const { StartWorkoutDto } = await import('../src/workouts/dto/start-workout.dto');
+  const dto = plainToInstance(StartWorkoutDto, {
+    trainingPlanId: '00000000-0000-4000-8000-000000000001',
+    planDayId: '00000000-0000-4000-8000-000000000002',
+  });
+  const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+  assert.equal(errors.length, 0);
+});

@@ -26,12 +26,17 @@ test('PostgreSQL persists a user-owned training plan and completed workout', asy
     });
     assert.equal(plan.userId, userId);
 
+    const planDay = await prisma.planDay.create({
+      data: { trainingPlanId: plan.id, dayNumber: 1, title: 'Day 1' },
+      select: { id: true },
+    });
     const workout = await prisma.workoutSession.create({
-      data: { userId, trainingPlanId: plan.id },
-      select: { id: true, status: true, trainingPlanId: true },
+      data: { userId, trainingPlanId: plan.id, planDayId: planDay.id },
+      select: { id: true, status: true, trainingPlanId: true, planDayId: true },
     });
     assert.equal(workout.status, 'IN_PROGRESS');
     assert.equal(workout.trainingPlanId, plan.id);
+    assert.equal(workout.planDayId, planDay.id);
 
     await prisma.workoutSession.update({
       where: { id: workout.id },
@@ -40,13 +45,14 @@ test('PostgreSQL persists a user-owned training plan and completed workout', asy
 
     const persisted = await prisma.workoutSession.findFirst({
       where: { id: workout.id, userId },
-      select: { status: true, perceivedEffort: true, feedback: true, trainingPlanId: true },
+      select: { status: true, perceivedEffort: true, feedback: true, trainingPlanId: true, planDayId: true },
     });
     assert.deepEqual(persisted, {
       status: 'COMPLETED',
       perceivedEffort: 6,
       feedback: 'Integration test complete',
       trainingPlanId: plan.id,
+      planDayId: planDay.id,
     });
   } finally {
     if (userId) await prisma.user.delete({ where: { id: userId } });

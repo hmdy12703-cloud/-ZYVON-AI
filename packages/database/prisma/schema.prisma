@@ -127,6 +127,7 @@ model PlanDay {
   title          String
   notes          String?
   exercises      PlanExercise[]
+  workouts       WorkoutSession[]
   @@unique([trainingPlanId, dayNumber])
 }
 
@@ -187,6 +188,8 @@ model WorkoutSession {
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   trainingPlanId String?       @db.Uuid
   trainingPlan   TrainingPlan? @relation(fields: [trainingPlanId], references: [id], onDelete: SetNull)
+  planDayId      String?       @db.Uuid
+  planDay        PlanDay?      @relation(fields: [planDayId], references: [id], onDelete: SetNull)
   startedAt      DateTime      @default(now())
   completedAt    DateTime?
   status         WorkoutStatus @default(IN_PROGRESS)

@@ -31,6 +31,7 @@ type Workout = { id: string; startedAt: string; completedAt: string | null; stat
 type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; completed: boolean; exercise?: { nameAr: string; nameEn: string } };
 type WorkoutDetail = { id: string; status: string; sets: WorkoutSet[] };
 type TrainingPlan = { id: string; title: string; goal: string; status: string; _count?: { days: number } };
+type NutritionLog = { id: string; loggedAt: string; calories: number | null; proteinGrams: number | null; carbsGrams: number | null; fatGrams: number | null; notes: string | null };
 type CoachMessage = { role: 'user' | 'coach'; text: string; mode?: 'AI' | 'RULE_BASED' };
 type PlanDetail = TrainingPlan & { days: Array<{ id: string; dayNumber: number; title: string; notes: string | null; exercises: Array<{ id: string; sets: number; repsMin: number; repsMax: number; restSeconds: number; exercise: { nameAr: string; nameEn: string; difficulty: string } }> }> };
 
@@ -69,6 +70,7 @@ export default function App() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [coachMessages, setCoachMessages] = useState<CoachMessage[]>([]);
+  const [nutritionLogs, setNutritionLogs] = useState<NutritionLog[]>([]);
   const [coachInput, setCoachInput] = useState('');
   const [coachMode, setCoachMode] = useState<'AI' | 'RULE_BASED' | null>(null);
 
@@ -91,16 +93,18 @@ export default function App() {
     setBusy(true);
     setError('');
     try {
-      const [me, catalog, history, planList] = await Promise.all([
+      const [me, catalog, history, planList, nutrition] = await Promise.all([
         api('/users/me'),
         api('/exercises?limit=12'),
         api('/workouts?limit=10'),
         api('/plans'),
+        api('/nutrition/logs'),
       ]);
       setExercises(catalog.data || []);
       const workoutItems: Workout[] = history.data || [];
       setWorkouts(workoutItems);
       setPlans(Array.isArray(planList) ? planList : []);
+      setNutritionLogs(Array.isArray(nutrition) ? nutrition : []);
       const inProgress = workoutItems.find((item) => item.status === 'IN_PROGRESS');
       if (inProgress) {
         const detail: WorkoutDetail = await api(`/workouts/${inProgress.id}`);
@@ -236,6 +240,35 @@ export default function App() {
       await viewPlan(planId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر تفعيل الخطة');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveNutrition(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const payload: Record<string, number | string> = {};
+    for (const field of ['calories', 'proteinGrams', 'carbsGrams', 'fatGrams'] as const) {
+      const value = String(form.get(field) || '').trim();
+      if (value !== '') payload[field] = Number(value);
+    }
+    const notes = String(form.get('notes') || '').trim();
+    if (notes) payload.notes = notes;
+    if (!Object.keys(payload).some((key) => key !== 'notes')) {
+      setError('أدخل قيمة غذائية واحدة على الأقل.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      await api('/nutrition/logs', { method: 'POST', body: JSON.stringify(payload) });
+      setMessage('تم حفظ السجل الغذائي.');
+      event.currentTarget.reset();
+      const logs = await api('/nutrition/logs');
+      setNutritionLogs(Array.isArray(logs) ? logs : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر حفظ السجل الغذائي');
     } finally {
       setBusy(false);
     }
@@ -380,6 +413,19 @@ export default function App() {
           {plans.length ? <div className="history-list">{plans.map((plan) => <div className="history-row" key={plan.id}><div><strong>{plan.title}</strong><p>{plan._count?.days ?? 0} أيام · {plan.goal}</p></div><div className="plan-actions"><span className={plan.status === 'ACTIVE' ? 'status done' : 'status'}>{plan.status === 'ACTIVE' ? 'نشطة' : plan.status === 'DRAFT' ? 'مسودة' : plan.status}</span><button className="outline" disabled={busy} onClick={() => viewPlan(plan.id)}>التفاصيل</button>{plan.status !== 'ACTIVE' && <button className="outline" disabled={busy} onClick={() => activatePlan(plan.id)}>تفعيل</button>}</div></div>)}</div> : <p className="muted">أنشئ خطة أولية بناءً على ملفك الرياضي والتمارين المنشورة.</p>}
         </section>
         {selectedPlan && <section className="panel plan-detail-panel"><div className="section-heading"><div><p className="eyebrow">PLAN DETAILS</p><h2>{selectedPlan.title}</h2></div><button className="ghost" onClick={() => setSelectedPlan(null)}>إغلاق</button></div><div className="plan-days">{selectedPlan.days.map((day) => <article className="plan-day" key={day.id}><h3>{day.title}</h3>{day.notes && <p className="muted">{day.notes}</p>}{day.exercises.map((item) => <div className="plan-exercise" key={item.id}><div><strong>{item.exercise.nameAr}</strong><small>{item.exercise.nameEn}</small></div><span>{item.sets} مجموعات × {item.repsMin}–{item.repsMax}</span><span>راحة {item.restSeconds} ث</span></div>)}</article>)}</div></section>}
+        <section className="panel nutrition-panel">
+          <div className="section-heading"><div><p className="eyebrow">NUTRITION TRACKER</p><h2>متابعة التغذية</h2></div><span className="pill">{nutritionLogs.length} سجلات</span></div>
+          <p className="muted">سجّل السعرات والعناصر الغذائية التي تعرفها. لا يتم افتراض قيم غذائية غير مدخلة.</p>
+          <form className="nutrition-form" onSubmit={saveNutrition}>
+            <label>السعرات الحرارية<input name="calories" type="number" min="0" max="10000" placeholder="مثال: 550" /></label>
+            <label>البروتين (جم)<input name="proteinGrams" type="number" min="0" max="1000" step="0.1" placeholder="مثال: 35" /></label>
+            <label>الكربوهيدرات (جم)<input name="carbsGrams" type="number" min="0" max="1000" step="0.1" placeholder="مثال: 60" /></label>
+            <label>الدهون (جم)<input name="fatGrams" type="number" min="0" max="1000" step="0.1" placeholder="مثال: 18" /></label>
+            <label className="nutrition-notes">ملاحظات الوجبة<input name="notes" maxLength={500} placeholder="فطار، غداء، وجبة خفيفة..." /></label>
+            <button className="primary" disabled={busy}>حفظ الوجبة</button>
+          </form>
+          <div className="nutrition-history">{nutritionLogs.map((log) => <div className="nutrition-row" key={log.id}><strong>{new Date(log.loggedAt).toLocaleString('ar-EG')}</strong><span>{log.calories !== null ? `${log.calories} سعر` : 'السعرات غير مسجلة'}</span><small>بروتين {log.proteinGrams ?? '—'} جم · كارب {log.carbsGrams ?? '—'} جم · دهون {log.fatGrams ?? '—'} جم</small>{log.notes && <small>{log.notes}</small>}</div>)}{!nutritionLogs.length && <p className="muted">لم تسجل وجبات بعد.</p>}</div>
+        </section>
         <section className="panel coach-panel">
           <div className="section-heading"><div><p className="eyebrow">ZYVON AI COACH</p><h2>اسأل مدربك الذكي</h2></div><span className="pill">{coachMode === 'AI' ? 'AI متصل' : coachMode === 'RULE_BASED' ? 'وضع إرشادي' : 'جاهز'}</span></div>
           <p className="muted">اسأل عن التمرين أو تنظيم جدولك أو هدفك. يراعي المدرب بيانات ملفك وملاحظات السلامة.</p>

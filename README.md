@@ -233,3 +233,12 @@ Without a provider key, the endpoint returns a clearly labeled `RULE_BASED` star
 ### Nutrition logging
 
 The signed-in dashboard can save calories, protein, carbohydrates, fats, and optional meal notes. All reads and writes are scoped to the authenticated account. The API validates numeric ranges and returns the 30 most recent entries. The first version records values entered by the user; it does not estimate food nutrition or claim that logged values are clinically accurate.
+
+
+### Native mobile app (Expo starter)
+
+An Expo React Native app is now present at `apps/mobile` for Android and iOS. The first mobile slice includes account registration/login and the ZYVON coach chat, using the same authenticated API as the web client.
+
+Copy `apps/mobile/.env.example` to `apps/mobile/.env` and set `EXPO_PUBLIC_API_BASE_URL` to a reachable API URL. For a physical phone, use the server's LAN address or deployed HTTPS URL; do not use `localhost` on the phone. Android emulator commonly reaches the host at `10.0.2.2`.
+
+Start with `pnpm --filter @zyvon/mobile dev`. This is a development starter, not a signed store-ready APK/IPA. Device QA, secure token persistence, full native workout/profile/nutrition screens, app icons/splash assets, and store signing remain release tasks.

@@ -28,7 +28,7 @@ type Exercise = {
   equipment: unknown;
 };
 type Workout = { id: string; startedAt: string; completedAt: string | null; status: string; _count?: { sets: number } };
-type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; completed: boolean };
+type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; completed: boolean; exercise?: { nameAr: string; nameEn: string } };
 type WorkoutDetail = { id: string; status: string; sets: WorkoutSet[] };
 type TrainingPlan = { id: string; title: string; goal: string; status: string; _count?: { days: number } };
 
@@ -57,6 +57,7 @@ export default function App() {
   const [reps, setReps] = useState('10');
   const [loadKg, setLoadKg] = useState('');
   const [setCounts, setSetCounts] = useState<Record<string, number>>({});
+  const [workoutSets, setWorkoutSets] = useState<WorkoutSet[]>([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -98,6 +99,7 @@ export default function App() {
       if (inProgress) {
         const detail: WorkoutDetail = await api(`/workouts/${inProgress.id}`);
         setActiveWorkout(detail.id);
+        setWorkoutSets(detail.sets || []);
         const counts = detail.sets.reduce<Record<string, number>>((result, item) => {
           result[item.exerciseId] = Math.max(result[item.exerciseId] || 0, item.setNumber);
           return result;
@@ -106,6 +108,7 @@ export default function App() {
       } else {
         setActiveWorkout(null);
         setSetCounts({});
+        setWorkoutSets([]);
       }
       try {
         const saved = await api('/users/me/profile');
@@ -138,6 +141,7 @@ export default function App() {
     setProfile(emptyProfile);
     setActiveWorkout(null);
     setSetCounts({});
+    setWorkoutSets([]);
   }
 
   async function authenticate(event: FormEvent<HTMLFormElement>) {
@@ -234,6 +238,14 @@ export default function App() {
 
   async function logExercise(exerciseId: string) {
     if (!activeWorkout) return;
+    if (!Number.isInteger(Number(reps)) || Number(reps) < 1 || Number(reps) > 1000) {
+      setError('أدخل عدد تكرارات صحيحًا من 1 إلى 1000.');
+      return;
+    }
+    if (loadKg !== '' && (!Number.isFinite(Number(loadKg)) || Number(loadKg) < 0 || Number(loadKg) > 1000)) {
+      setError('أدخل وزنًا صحيحًا من 0 إلى 1000 كجم.');
+      return;
+    }
     setBusy(true);
     try {
       await api(`/workouts/${activeWorkout}/sets`, {
@@ -302,6 +314,7 @@ export default function App() {
       {error && <p className="alert error">{error}</p>}
       {message && <p className="alert success">{message}</p>}
       {activeWorkout && <section className="active-banner"><div><strong>جلسة تدريب نشطة</strong><p>حدد التكرارات والوزن، ثم سجّل كل مجموعة من مكتبة التمارين.</p><div className="set-inputs"><label>التكرارات<input type="number" min="1" max="1000" value={reps} onChange={(e) => setReps(e.target.value)} /></label><label>الوزن (كجم)<input type="number" min="0" max="1000" step="0.25" value={loadKg} onChange={(e) => setLoadKg(e.target.value)} placeholder="اختياري" /></label></div></div><button className="danger" onClick={finishWorkout} disabled={busy}>إنهاء الجلسة</button></section>}
+      {activeWorkout && <section className="panel logged-workout"><div className="section-heading"><div><p className="eyebrow">LIVE SESSION</p><h2>المجموعات المسجلة</h2></div><span className="pill">{workoutSets.length} مجموعة</span></div>{workoutSets.length ? <div className="logged-set-list">{workoutSets.map((set) => <div className="logged-set" key={set.id}><div><strong>{set.exercise?.nameAr || 'تمرين'}</strong><small>{set.exercise?.nameEn || ''} · المجموعة {set.setNumber}</small></div><span>{set.reps !== null ? `${set.reps} تكرار` : `${set.durationSeconds} ثانية`}</span><span>{set.loadKg !== null ? `${set.loadKg} كجم` : 'بدون وزن'}</span></div>)}</div> : <p className="muted">لم تُسجل مجموعات بعد. اختر تمرينًا من المكتبة للبدء.</p>}</section>}
       <div className="dashboard-grid">
         <section className="panel profile-panel">
           <div className="section-heading"><div><p className="eyebrow">YOUR BASELINE</p><h2>ملفك الرياضي</h2></div><span className="pill">التهيئة</span></div>

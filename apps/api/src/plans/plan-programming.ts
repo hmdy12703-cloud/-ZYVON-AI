@@ -50,24 +50,49 @@ const levelRank: Record<PlanLevel, number> = {
   ADVANCED: 2,
 };
 
+const equipmentAliases: Record<string, string> = {
+  'body weight': 'bodyweight',
+  'no equipment': 'bodyweight',
+  'بدون معدات': 'bodyweight',
+  'وزن الجسم': 'bodyweight',
+  'dumbbells': 'dumbbell',
+  'دمبلز': 'dumbbell',
+  'دمبل': 'dumbbell',
+  'barbells': 'barbell',
+  'بار': 'barbell',
+  'باربل': 'barbell',
+  'kettlebells': 'kettlebell',
+  ' kettlebell': 'kettlebell',
+  'bands': 'resistance-band',
+  'resistance band': 'resistance-band',
+  'resistance bands': 'resistance-band',
+  'استيك مقاومة': 'resistance-band',
+  'مطاط مقاومة': 'resistance-band',
+  'pull up bar': 'pull-up-bar',
+  'pull-up bar': 'pull-up-bar',
+  'عقلة': 'pull-up-bar',
+};
+
+function canonicalEquipment(value: string): string {
+  const cleaned = value.trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\\s+/g, ' ');
+  return equipmentAliases[cleaned] ?? cleaned.replace(/ /g, '-');
+}
+
 function stringList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((item): item is string => typeof item === 'string')
-    .map((item) => item.trim().toLowerCase())
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map(canonicalEquipment)
     .filter(Boolean);
 }
 
 function equipmentMatches(requiredValue: unknown, availableValue: unknown): boolean {
   const required = stringList(requiredValue);
-  if (required.length === 0 || required.some((item) =>
-    ['bodyweight', 'body weight', 'none', 'no equipment', 'بدون معدات', 'وزن الجسم'].includes(item),
-  )) return true;
+  if (required.length === 0 || required.includes('bodyweight')) return true;
 
-  const available = stringList(availableValue);
-  if (available.length === 0) return false;
-  return required.every((item) => available.some((owned) =>
-    owned === item || owned.includes(item) || item.includes(owned),
-  ));
+  const available = new Set(stringList(availableValue));
+  if (available.has('bodyweight')) return false;
+  return required.every((item) => available.has(item));
 }
 
 export function buildPlanDays(profile: PlanProfile, candidates: PlanCandidate[]): PlannedDay[] {

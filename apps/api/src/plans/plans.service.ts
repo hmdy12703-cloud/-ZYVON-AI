@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { PlanStatus } from '@prisma/client';
+import { ExperienceLevel, PlanStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { buildPlanDays } from './plan-programming';
 
 @Injectable()
 export class PlansService {
@@ -40,17 +41,31 @@ export class PlansService {
     const profile = await this.prisma.userProfile.findUnique({ where: { userId } });
     if (!profile) throw new BadRequestException('Complete your fitness profile before generating a plan');
 
+    const allowedLevels = profile.experienceLevel === ExperienceLevel.BEGINNER
+      ? [ExperienceLevel.BEGINNER]
+      : profile.experienceLevel === ExperienceLevel.INTERMEDIATE
+        ? [ExperienceLevel.BEGINNER, ExperienceLevel.INTERMEDIATE]
+        : [ExperienceLevel.BEGINNER, ExperienceLevel.INTERMEDIATE, ExperienceLevel.ADVANCED];
+
     const exercises = await this.prisma.exercise.findMany({
-      where: { status: 'PUBLISHED', difficulty: profile.experienceLevel },
+      where: { status: 'PUBLISHED', difficulty: { in: allowedLevels } },
       orderBy: { nameEn: 'asc' },
-      take: 30,
-      select: { id: true, nameAr: true, nameEn: true },
+      take: 100,
+      select: { id: true, nameAr: true, nameEn: true, difficulty: true, equipment: true },
     });
-    if (exercises.length < 3) {
-      throw new BadRequestException('At least three published exercises for your experience level are required');
+
+    let days;
+    try {
+      days = buildPlanDays(profile, exercises);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'NOT_ENOUGH_SUITABLE_EXERCISES') {
+        throw new BadRequestException(
+          'Not enough published exercises match your experience level and available equipment. Update your equipment or ask an administrator to add suitable exercises.',
+        );
+      }
+      throw error;
     }
 
-    const dayCount = Math.min(6, Math.max(1, profile.trainingDaysPerWeek));
     const title = profile.preferredLanguage === 'ar'
       ? 'خطتي التدريبية الشخصية'
       : 'My Personal Training Plan';
@@ -61,31 +76,13 @@ export class PlansService {
         title,
         goal: profile.goal,
         status: PlanStatus.DRAFT,
-        days: {
-          create: Array.from({ length: dayCount }, (_, dayIndex) => {
-            const chosen = Array.from({ length: Math.min(5, exercises.length) }, (_, index) =>
-              exercises[(dayIndex * 3 + index) % exercises.length]!,
-            );
-            return {
-              dayNumber: dayIndex + 1,
-              title: profile.preferredLanguage === 'ar' ? `اليوم ${dayIndex + 1}` : `Day ${dayIndex + 1}`,
-              notes: 'Start with a comfortable warm-up. Stop if you feel pain or unusual symptoms.',
-              exercises: {
-                create: chosen.map((exercise, index) => ({
-                  exerciseId: exercise.id,
-                  sortOrder: index + 1,
-                  sets: 3,
-                  repsMin: 8,
-                  repsMax: 12,
-                  restSeconds: 60,
-                })),
-              },
-            };
-          }),
-        },
+        days: { create: days },
       },
       include: {
-        days: { orderBy: { dayNumber: 'asc' }, include: { exercises: { include: { exercise: true } } } },
+        days: {
+          orderBy: { dayNumber: 'asc' },
+          include: { exercises: { include: { exercise: true } } },
+        },
       },
     });
   }

@@ -33,7 +33,8 @@ type WorkoutDetail = { id: string; status: string; sets: WorkoutSet[] };
 type TrainingPlan = { id: string; title: string; goal: string; status: string; _count?: { days: number } };
 type ProgressionItem = { exerciseId: string; action: 'ADD_ONE_REP' | 'SMALL_LOAD_INCREASE' | 'HOLD'; suggestedLoadKg: number | null; reason: string };
 type ProgressionResult = { basedOnSessions: number; recommendations: ProgressionItem[]; safetyMessage: string };
-type AdminOverview = { users: number; exercises: number; publishedExercises: number; draftExercises: number; plans: number; workouts: number; nutritionLogs: number };
+type AdminOverview = { users: number; feedbackEntries: number; exercises: number; publishedExercises: number; draftExercises: number; plans: number; workouts: number; nutritionLogs: number };
+type AdminFeedback = { id: string; category: string; rating: number; comment: string | null; createdAt: string; user: { email: string } };
 type AdminExercise = { id: string; slug: string; nameAr: string; nameEn: string; difficulty: string; status: string };
 type NutritionLog = { id: string; loggedAt: string; calories: number | null; proteinGrams: number | null; carbsGrams: number | null; fatGrams: number | null; notes: string | null };
 type CoachMessage = { role: 'user' | 'coach'; text: string; mode?: 'AI' | 'RULE_BASED' };
@@ -78,6 +79,7 @@ export default function App() {
   const [adminOverview, setAdminOverview] = useState<AdminOverview | null>(null);
   const [progression, setProgression] = useState<ProgressionResult | null>(null);
   const [adminExercises, setAdminExercises] = useState<AdminExercise[]>([]);
+  const [adminFeedback, setAdminFeedback] = useState<AdminFeedback[]>([]);
   const [coachInput, setCoachInput] = useState('');
   const [coachMode, setCoachMode] = useState<'AI' | 'RULE_BASED' | null>(null);
 
@@ -141,15 +143,18 @@ export default function App() {
       }
       setUser(me.user);
       if (me.user?.role === 'ADMIN') {
-        const [overview, adminItems] = await Promise.all([
+        const [overview, adminItems, feedbackItems] = await Promise.all([
           api('/admin/overview'),
           api('/admin/exercises'),
+          api('/admin/feedback'),
         ]);
         setAdminOverview(overview);
         setAdminExercises(Array.isArray(adminItems) ? adminItems : []);
+        setAdminFeedback(Array.isArray(feedbackItems) ? feedbackItems : []);
       } else {
         setAdminOverview(null);
         setAdminExercises([]);
+        setAdminFeedback([]);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر تحميل البيانات');
@@ -505,7 +510,13 @@ export default function App() {
             <div><strong>{adminOverview.plans}</strong><small>الخطط</small></div>
             <div><strong>{adminOverview.workouts}</strong><small>جلسات التدريب</small></div>
             <div><strong>{adminOverview.nutritionLogs}</strong><small>سجلات التغذية</small></div>
+            <div><strong>{adminOverview.feedbackEntries}</strong><small>تقييمات المستخدمين</small></div>
           </div>}
+          <h3 className="admin-subtitle">آراء وتقييمات المستخدمين</h3>
+          <div className="history-list">{adminFeedback.map((item) => <div className="history-row" key={item.id}>
+            <div><strong>{item.rating}/5 ★ · {item.category}</strong><p>{item.comment || 'بدون تعليق'} · {item.user.email}</p></div>
+            <small>{new Date(item.createdAt).toLocaleDateString('ar-EG')}</small>
+          </div>)}{!adminFeedback.length && <p className="muted">لا توجد تقييمات بعد.</p>}</div>
           <h3 className="admin-subtitle">إضافة تمرين جديد</h3>
           <form className="admin-exercise-form" onSubmit={createAdminExercise}>
             <label>المعرّف بالإنجليزية<input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxLength={80} placeholder="bodyweight-squat" /></label>

@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AddWorkoutSetDto } from './dto/add-workout-set.dto';
 import { ListWorkoutsDto } from './dto/list-workouts.dto';
 import { StartWorkoutDto } from './dto/start-workout.dto';
+import { CompleteWorkoutDto } from './dto/complete-workout.dto';
 import { WorkoutsService } from './workouts.service';
 
 type AuthRequest = Request & { user: AuthenticatedUser };
@@ -35,7 +36,7 @@ export class WorkoutsController {
   }
 
   @Patch(':id/complete')
-  complete(@Req() request: AuthRequest, @Param('id') id: string) {
-    return this.workouts.complete(request.user.sub, id);
+  complete(@Req() request: AuthRequest, @Param('id') id: string, @Body() dto: CompleteWorkoutDto) {
+    return this.workouts.complete(request.user.sub, id, dto);
   }
 }

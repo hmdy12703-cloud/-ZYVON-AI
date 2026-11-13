@@ -36,7 +36,9 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [mode, setMode] = useState('RULE_BASED');
-  const [screen, setScreen] = useState<'home' | 'profile' | 'training' | 'nutrition' | 'coach'>('home');
+  const [screen, setScreen] = useState<'home' | 'profile' | 'training' | 'nutrition' | 'coach' | 'feedback'>('home');
+  const [feedbackRating, setFeedbackRating] = useState('5');
+  const [feedbackComment, setFeedbackComment] = useState('');
   const [profile, setProfile] = useState<Profile>(emptyProfile);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
@@ -276,6 +278,7 @@ export default function App() {
     { key: 'training', label: 'التمرين' },
     { key: 'nutrition', label: 'التغذية' },
     { key: 'coach', label: 'المدرب' },
+    { key: 'feedback', label: 'تقييم التطبيق' },
   ];
 
   return (
@@ -355,6 +358,24 @@ export default function App() {
               <Text style={styles.muted}>{nutrition.filter((item) => new Date(item.loggedAt).toDateString() === new Date().toDateString()).reduce((sum, item) => sum + (item.calories || 0), 0)} سعرة · بروتين {nutrition.filter((item) => new Date(item.loggedAt).toDateString() === new Date().toDateString()).reduce((sum, item) => sum + (item.proteinGrams || 0), 0)} جم · كربوهيدرات {nutrition.filter((item) => new Date(item.loggedAt).toDateString() === new Date().toDateString()).reduce((sum, item) => sum + (item.carbsGrams || 0), 0)} جم · دهون {nutrition.filter((item) => new Date(item.loggedAt).toDateString() === new Date().toDateString()).reduce((sum, item) => sum + (item.fatGrams || 0), 0)} جم</Text>
               <Text style={styles.subtitle}>السجلات الأخيرة</Text>
               {nutrition.map((item) => <View key={item.id} style={styles.exercise}><Text style={styles.exerciseName}>{item.calories ?? '—'} سعرة · بروتين {item.proteinGrams ?? '—'} جم</Text><Text style={styles.muted}>{item.notes || new Date(item.loggedAt).toLocaleDateString('ar-EG')}</Text></View>)}
+            </View>}
+            {screen === 'feedback' && <View style={styles.card}>
+              <Text style={styles.title}>تقييم تجربتك</Text>
+              <Text style={styles.muted}>ساعدنا على تحسين ZYVON AI. قيّم تجربتك وأرسل ملاحظاتك.</Text>
+              <Text style={styles.subtitle}>التقييم من 1 إلى 5</Text>
+              <View style={styles.wrap}>
+                {['1', '2', '3', '4', '5'].map((value) => <Pressable key={value} style={[styles.choice, feedbackRating === value && styles.choiceActive]} onPress={() => setFeedbackRating(value)}><Text style={styles.choiceText}>{value} ★</Text></Pressable>)}
+              </View>
+              <TextInput style={[styles.input, styles.question]} value={feedbackComment} onChangeText={setFeedbackComment} maxLength={1000} multiline placeholder="اكتب ملاحظاتك أو اقتراحاتك..." placeholderTextColor="#8293aa" />
+              <Pressable style={styles.primary} disabled={busy} onPress={async () => {
+                setBusy(true); setError('');
+                try {
+                  await request('/feedback', { method: 'POST', body: JSON.stringify({ category: 'APP_EXPERIENCE', rating: Number(feedbackRating), comment: feedbackComment.trim() || undefined }) });
+                  setFeedbackComment('');
+                  setError('تم إرسال تقييمك بنجاح. شكرًا لمساعدتنا على التطوير.');
+                } catch (err) { setError(err instanceof Error ? err.message : 'تعذر إرسال التقييم'); }
+                finally { setBusy(false); }
+              }}><Text style={styles.primaryText}>إرسال التقييم</Text></Pressable>
             </View>}
             {screen === 'coach' && <View style={styles.card}>
               <View style={styles.row}><Text style={styles.title}>مدربك الذكي</Text><Text style={styles.pill}>{mode === 'AI' ? 'AI' : 'إرشادي'}</Text></View>

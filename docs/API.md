@@ -56,7 +56,9 @@ Error:
 - GET `/workouts` — current user's history.
 - GET `/workouts/:workoutId`
 - POST `/workouts/:workoutId/sets`
-- POST `/workouts/:workoutId/complete`
+- PATCH `/workouts/:workoutId/complete`
+
+Set logging request fields: `exerciseId` and `setNumber` are required; provide `reps` or `durationSeconds`; `loadKg` and `completed` are optional. Set numbers start at 1 for each exercise in a workout. The current web client increments these locally during the active browser session.
 
 ## AI coach
 - POST `/coach/conversations`

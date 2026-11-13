@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -39,7 +39,7 @@ export class ProfileService {
       const now = new Date();
       const age = now.getFullYear() - date.getFullYear();
       if (date > now || age > 120) {
-        throw new Error('Birth date is outside the allowed range');
+        throw new BadRequestException('Birth date is outside the allowed range');
       }
     }
 

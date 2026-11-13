@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { ExperienceLevel, PlanStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildPlanDays } from './plan-programming';
+import { buildProgressionRecommendations } from './progression';
 
 @Injectable()
 export class PlansService {
@@ -85,6 +86,26 @@ export class PlansService {
         },
       },
     });
+  }
+
+  async progressionRecommendations(userId: string) {
+    const sessions = await this.prisma.workoutSession.findMany({
+      where: { userId, status: 'COMPLETED' },
+      orderBy: { completedAt: 'desc' },
+      take: 2,
+      select: {
+        feedback: true,
+        perceivedEffort: true,
+        sets: {
+          select: { exerciseId: true, reps: true, loadKg: true, completed: true },
+        },
+      },
+    });
+    return {
+      basedOnSessions: sessions.length,
+      recommendations: buildProgressionRecommendations(sessions),
+      safetyMessage: 'Do not increase load when you have pain, unusual symptoms, poor technique, or excessive fatigue. Seek qualified advice when needed.',
+    };
   }
 
   async activate(userId: string, planId: string) {

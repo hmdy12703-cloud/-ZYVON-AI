@@ -20,6 +20,7 @@ type Workout = { id: string; status: string; startedAt: string; _count?: { sets:
 type WorkoutDetail = { id: string; status: string; startedAt: string; completedAt?: string | null; perceivedEffort?: number | null; feedback?: string | null; sets: WorkoutSet[] };
 type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; exercise?: { nameAr: string; nameEn: string } };
 type TrainingPlan = { id: string; title: string; goal: string; status: string; startDate?: string | null; _count?: { days: number }; days?: Array<{ id: string; dayNumber: number; title?: string | null; exercises: Array<{ id: string; sets: number; repsMin: number; repsMax: number; durationSeconds?: number | null; restSeconds: number; exercise: { id: string; nameAr: string; nameEn: string; difficulty: string } }> }> };
+type WorkoutProgress = { sessions: Array<{ id: string; completedAt: string | null; completedSets: number; volumeKg: number }>; totals: { completedSessions: number; completedSets: number; volumeKg: number } };
 type Progression = { basedOnSessions: number; recommendations: Array<{ exerciseId: string; action: string; suggestedLoadKg: number | null; reason: string }>; safetyMessage: string };
 type NutritionLog = { id: string; calories?: number; proteinGrams?: number; carbsGrams?: number; fatGrams?: number; loggedAt: string; notes?: string };
 type Profile = { displayName: string; heightCm: string; weightKg: string; goal: string; experienceLevel: string; trainingDaysPerWeek: string; sessionMinutes: string; equipment: string; safetyNotes: string };
@@ -56,6 +57,7 @@ export default function App() {
   const [sessionFeedback, setSessionFeedback] = useState('');
   const [nutrition, setNutrition] = useState<NutritionLog[]>([]);
   const [progression, setProgression] = useState<Progression | null>(null);
+  const [workoutProgress, setWorkoutProgress] = useState<WorkoutProgress | null>(null);
   const [plans, setPlans] = useState<TrainingPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<TrainingPlan | null>(null);
   const [calories, setCalories] = useState('');
@@ -112,8 +114,12 @@ export default function App() {
         setActiveSets([]);
       }
       setNutrition(Array.isArray(nutritionResult) ? nutritionResult : []);
-      const progressionResult = await request('/plans/progression/recommendations').catch(() => null);
+      const [progressionResult, progressResult] = await Promise.all([
+        request('/plans/progression/recommendations').catch(() => null),
+        request('/workouts/progress').catch(() => null),
+      ]);
       setProgression(progressionResult);
+      setWorkoutProgress(progressResult);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load your dashboard');
     } finally {
@@ -392,6 +398,15 @@ export default function App() {
                 <View style={styles.stat}><Text style={styles.statValue}>{exercises.length}</Text><Text style={styles.muted}>تمارين متاحة</Text></View>
               </View>
               {activeWorkout ? <Text style={styles.pill}>لديك جلسة تدريب نشطة</Text> : <Pressable style={styles.primary} onPress={startWorkout} disabled={busy}><Text style={styles.primaryText}>ابدأ جلسة تدريب</Text></Pressable>}
+              {workoutProgress && <View style={styles.exercise}>
+                <Text style={styles.subtitle}>تقدمك التدريبي</Text>
+                <Text style={styles.muted}>آخر {workoutProgress.totals.completedSessions} جلسات مكتملة · {workoutProgress.totals.completedSets} مجموعة مكتملة · حجم تدريبي {workoutProgress.totals.volumeKg} كجم×تكرار</Text>
+                {workoutProgress.sessions.map((item) => <View key={item.id} style={styles.row}>
+                  <Text style={styles.muted}>{item.completedAt ? new Date(item.completedAt).toLocaleDateString('ar-EG') : 'جلسة مكتملة'}</Text>
+                  <Text style={styles.muted}>{item.completedSets} مجموعة · {item.volumeKg} كجم×تكرار</Text>
+                </View>)}
+                {!workoutProgress.sessions.length && <Text style={styles.muted}>أكمل أول جلسة لتظهر مؤشرات تقدمك هنا.</Text>}
+              </View>}
               {progression && <View style={styles.exercise}>
                 <Text style={styles.subtitle}>توصيات تطور الأداء</Text>
                 {progression.recommendations.length ? progression.recommendations.map((item) => {

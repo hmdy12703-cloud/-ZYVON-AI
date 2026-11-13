@@ -59,6 +59,38 @@ export class AdminService {
     }
   }
 
+
+  async updateExercise(id: string, dto: CreateExerciseDto) {
+    try {
+      return await this.prisma.exercise.update({
+        where: { id },
+        data: {
+          slug: dto.slug,
+          nameAr: dto.nameAr,
+          nameEn: dto.nameEn,
+          descriptionAr: dto.descriptionAr,
+          descriptionEn: dto.descriptionEn,
+          instructionsAr: dto.instructionsAr,
+          instructionsEn: dto.instructionsEn,
+          primaryMuscles: dto.primaryMuscles as Prisma.InputJsonValue,
+          equipment: dto.equipment as Prisma.InputJsonValue,
+          difficulty: dto.difficulty,
+          safetyNotesAr: dto.safetyNotesAr,
+          safetyNotesEn: dto.safetyNotesEn,
+        },
+        select: { id: true, slug: true, nameAr: true, nameEn: true, difficulty: true, status: true },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('An exercise with this slug already exists');
+      }
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('Exercise not found');
+      }
+      throw error;
+    }
+  }
+
   async updateExerciseStatus(id: string, dto: UpdateExerciseStatusDto) {
     try {
       return await this.prisma.exercise.update({

@@ -1,6 +1,6 @@
 FROM node:20-alpine
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+RUN apk add --no-cache openssl && corepack enable && corepack prepare pnpm@9.15.0 --activate
 COPY . .
 RUN pnpm install --no-frozen-lockfile
 RUN pnpm --filter @zyvon/database db:generate

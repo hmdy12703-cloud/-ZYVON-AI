@@ -128,3 +128,36 @@ Users should consult qualified professionals when needed.
 ## License
 
 License to be determined.
+
+
+---
+
+## Developer setup (foundation stage)
+
+### Requirements
+- Node.js 20 or newer
+- pnpm 9
+- PostgreSQL 15 or newer (needed when the database phase is enabled)
+
+### Install
+```bash
+corepack enable
+corepack prepare pnpm@9.15.0 --activate
+pnpm install
+```
+
+### Environment
+Copy `.env.example` to `.env` and set a strong random `JWT_ACCESS_SECRET` plus your local PostgreSQL connection string. Do not commit `.env` or real API keys.
+
+### Current repository contents
+- `docs/`: product requirements, data model, API contract, and roadmap.
+- `packages/shared/`: shared TypeScript domain contracts.
+- `packages/localization/`: Arabic and English starter strings.
+- `packages/database/`: initial Prisma schema and database package.
+- Root workspace configuration: pnpm, TypeScript, ignore rules, and environment template.
+
+### Development status
+The repository now contains the product specification and the first monorepo/database foundations. This is **not yet a runnable end-user application**: authentication, API modules, mobile screens, web screens, database migrations, AI integration, and automated tests remain to be implemented and verified.
+
+### Phone-only workflow
+Open the repository in GitHub on your phone to review files and commits. For running builds and tests without a computer, use a browser-based development environment that supports Node.js and pnpm; do not paste secrets into public files or chat.

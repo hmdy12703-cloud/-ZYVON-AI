@@ -214,3 +214,7 @@ Workout endpoints require a valid bearer token and scope every read/write by the
 ### Automated tests
 
 The API CI job validates the Prisma schema, generates Prisma Client, builds the NestJS API, and runs DTO validation regression tests using Node's test runner through `tsx`.
+
+### Web application (early MVP)
+
+A responsive Arabic-first React/Vite client lives in `apps/web`. It includes account registration/login, profile onboarding, a published exercise catalog, workout start/set logging/completion, and workout history. It is an early MVP, not a production release. It uses a short-lived access token in `sessionStorage`; production should move authentication to secure, HttpOnly cookies before public launch. Configure `VITE_API_BASE_URL` and set the API `CORS_ORIGIN` to the web app origin. Local web development runs on `http://localhost:5173`; the API runs on port `4000`.

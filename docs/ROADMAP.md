@@ -29,6 +29,8 @@
 - [x] Rule-based starter training-plan generation, listing, and activation.
 - [x] Installable PWA manifest, icon, and basic offline app-shell fallback.
 - [x] CI workflow includes Prisma validation, API build, API DTO tests, and web build.
+- [x] Web client restores an active workout from the API and displays its saved sets after reload.
+- [x] Web client displays training-plan day and exercise details.
 - [ ] Verify the latest CI run after the most recent web workout-logging changes.
 - [ ] Add database-backed integration tests using a disposable PostgreSQL service.
 

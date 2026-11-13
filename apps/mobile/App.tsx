@@ -18,6 +18,7 @@ type CoachMessage = { role: 'user' | 'coach'; text: string };
 type Exercise = { id: string; nameAr: string; nameEn: string; descriptionAr: string; difficulty: string };
 type Workout = { id: string; status: string; startedAt: string; _count?: { sets: number } };
 type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; exercise?: { nameAr: string; nameEn: string } };
+type Progression = { basedOnSessions: number; recommendations: Array<{ exerciseId: string; action: string; suggestedLoadKg: number | null; reason: string }>; safetyMessage: string };
 type NutritionLog = { id: string; calories?: number; proteinGrams?: number; carbsGrams?: number; fatGrams?: number; loggedAt: string; notes?: string };
 type Profile = { displayName: string; heightCm: string; weightKg: string; goal: string; experienceLevel: string; trainingDaysPerWeek: string; sessionMinutes: string; equipment: string; safetyNotes: string };
 
@@ -48,6 +49,7 @@ export default function App() {
   const [reps, setReps] = useState('10');
   const [loadKg, setLoadKg] = useState('');
   const [nutrition, setNutrition] = useState<NutritionLog[]>([]);
+  const [progression, setProgression] = useState<Progression | null>(null);
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
   const [carbs, setCarbs] = useState('');
@@ -100,6 +102,8 @@ export default function App() {
         setActiveSets([]);
       }
       setNutrition(Array.isArray(nutritionResult) ? nutritionResult : []);
+      const progressionResult = await request('/plans/progression/recommendations').catch(() => null);
+      setProgression(progressionResult);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load your dashboard');
     } finally {
@@ -314,6 +318,14 @@ export default function App() {
                 <View style={styles.stat}><Text style={styles.statValue}>{exercises.length}</Text><Text style={styles.muted}>تمارين متاحة</Text></View>
               </View>
               {activeWorkout ? <Text style={styles.pill}>لديك جلسة تدريب نشطة</Text> : <Pressable style={styles.primary} onPress={startWorkout} disabled={busy}><Text style={styles.primaryText}>ابدأ جلسة تدريب</Text></Pressable>}
+              {progression && <View style={styles.exercise}>
+                <Text style={styles.subtitle}>توصيات تطور الأداء</Text>
+                {progression.recommendations.length ? progression.recommendations.map((item) => {
+                  const exercise = exercises.find((candidate) => candidate.id === item.exerciseId);
+                  return <View key={item.exerciseId}><Text style={styles.exerciseName}>{exercise?.nameAr || exercise?.nameEn || 'تمرين'}</Text><Text style={styles.muted}>{item.action === 'SMALL_LOAD_INCREASE' ? `وزن مقترح ${item.suggestedLoadKg} كجم` : item.action === 'ADD_ONE_REP' ? 'جرّب إضافة تكرار واحد' : 'حافظ على نفس المستوى'}</Text><Text style={styles.muted}>{item.reason}</Text></View>;
+                }) : <Text style={styles.muted}>سجّل جلستين مكتملتين للتمرين نفسه لعرض توصيات التقدم.</Text>}
+                <Text style={styles.muted}>{progression.safetyMessage}</Text>
+              </View>}
               <Pressable onPress={() => setScreen('profile')}><Text style={styles.link}>أكمل ملفك الرياضي</Text></Pressable>
               <Pressable onPress={signOut}><Text style={styles.link}>تسجيل الخروج</Text></Pressable>
             </View>}

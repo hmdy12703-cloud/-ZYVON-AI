@@ -76,7 +76,7 @@ export class PlansService {
         title,
         goal: profile.goal,
         status: PlanStatus.DRAFT,
-        days: { create: days },
+        days: { create: days.map((day) => ({ ...day, exercises: { create: day.exercises } })) },
       },
       include: {
         days: {

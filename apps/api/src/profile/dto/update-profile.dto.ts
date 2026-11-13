@@ -11,8 +11,6 @@ import {
   Max,
   MaxLength,
   Min,
-  ValidateNested,
-  Matches,
 } from 'class-validator';
 import { Language, FitnessGoal, ExperienceLevel } from '@prisma/client';
 

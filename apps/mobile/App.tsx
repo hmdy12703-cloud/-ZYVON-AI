@@ -17,6 +17,7 @@ const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000/
 type CoachMessage = { role: 'user' | 'coach'; text: string };
 type Exercise = { id: string; nameAr: string; nameEn: string; descriptionAr: string; difficulty: string };
 type Workout = { id: string; status: string; startedAt: string; _count?: { sets: number } };
+type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; exercise?: { nameAr: string; nameEn: string } };
 type NutritionLog = { id: string; calories?: number; proteinGrams?: number; carbsGrams?: number; fatGrams?: number; loggedAt: string; notes?: string };
 type Profile = { displayName: string; heightCm: string; weightKg: string; goal: string; experienceLevel: string; trainingDaysPerWeek: string; sessionMinutes: string; equipment: string; safetyNotes: string };
 
@@ -40,6 +41,7 @@ export default function App() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [activeWorkout, setActiveWorkout] = useState('');
+  const [activeSets, setActiveSets] = useState<WorkoutSet[]>([]);
   const [selectedExercise, setSelectedExercise] = useState('');
   const [reps, setReps] = useState('10');
   const [loadKg, setLoadKg] = useState('');
@@ -87,7 +89,14 @@ export default function App() {
       setExercises(exerciseResult.data || []);
       const sessions: Workout[] = workoutResult.data || [];
       setWorkouts(sessions);
-      setActiveWorkout(sessions.find((item) => item.status === 'IN_PROGRESS')?.id || '');
+      const activeId = sessions.find((item) => item.status === 'IN_PROGRESS')?.id || '';
+      setActiveWorkout(activeId);
+      if (activeId) {
+        const detail = await request(`/workouts/${activeId}`);
+        setActiveSets(Array.isArray(detail.sets) ? detail.sets : []);
+      } else {
+        setActiveSets([]);
+      }
       setNutrition(Array.isArray(nutritionResult) ? nutritionResult : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load your dashboard');
@@ -167,7 +176,7 @@ export default function App() {
     setError('');
     try {
       const detail = await request(`/workouts/${activeWorkout}`);
-      const previous = (detail.sets || []).filter((item: { exerciseId: string }) => item.exerciseId === selectedExercise).length;
+      const previous = (detail.sets || []).filter((item: { exerciseId: string }) => item.exerciseId === selectedExercise).reduce((max: number, item: { setNumber: number }) => Math.max(max, item.setNumber), 0);
       await request(`/workouts/${activeWorkout}/sets`, {
         method: 'POST',
         body: JSON.stringify({
@@ -258,6 +267,7 @@ export default function App() {
     setNutrition([]);
     setWorkouts([]);
     setActiveWorkout('');
+    setActiveSets([]);
   }
 
   const nav: Array<{ key: typeof screen; label: string }> = [
@@ -324,6 +334,8 @@ export default function App() {
                 <Text style={styles.pill}>جلسة نشطة</Text>
                 <Text style={styles.muted}>اختر تمرينًا وسجّل المجموعة بعد إتمامها.</Text>
                 <View style={styles.exerciseList}>{exercises.map((exercise) => <Pressable key={exercise.id} style={[styles.exercise, selectedExercise === exercise.id && styles.choiceActive]} onPress={() => setSelectedExercise(exercise.id)}><Text style={styles.exerciseName}>{exercise.nameAr}</Text><Text style={styles.muted}>{exercise.nameEn}</Text></Pressable>)}</View>
+                <Text style={styles.subtitle}>المجموعات المسجلة</Text>
+                {activeSets.length === 0 ? <Text style={styles.muted}>لم تُسجل مجموعات بعد.</Text> : activeSets.map((item) => <View key={item.id} style={styles.exercise}><Text style={styles.exerciseName}>{item.exercise?.nameAr || item.exercise?.nameEn || 'تمرين'} · المجموعة {item.setNumber}</Text><Text style={styles.muted}>{item.reps ?? '—'} تكرار · {item.loadKg ?? '—'} كجم</Text></View>)}
                 <View style={styles.row}><TextInput style={styles.inputHalf} value={reps} onChangeText={setReps} keyboardType="number-pad" placeholder="التكرارات" placeholderTextColor="#8293aa" /><TextInput style={styles.inputHalf} value={loadKg} onChangeText={setLoadKg} keyboardType="decimal-pad" placeholder="الوزن كجم (اختياري)" placeholderTextColor="#8293aa" /></View>
                 <Pressable style={styles.primary} onPress={addSet} disabled={busy || !selectedExercise}><Text style={styles.primaryText}>حفظ المجموعة</Text></Pressable>
                 <Pressable style={styles.finish} onPress={finishWorkout} disabled={busy}><Text style={styles.primaryText}>إنهاء الجلسة</Text></Pressable>
@@ -339,6 +351,8 @@ export default function App() {
               <TextInput style={styles.input} value={fat} onChangeText={setFat} keyboardType="decimal-pad" placeholder="الدهون جم" placeholderTextColor="#8293aa" />
               <TextInput style={styles.input} value={mealNotes} onChangeText={setMealNotes} placeholder="ملاحظات الوجبة" placeholderTextColor="#8293aa" />
               <Pressable style={styles.primary} onPress={saveNutrition} disabled={busy}><Text style={styles.primaryText}>حفظ الوجبة</Text></Pressable>
+              <Text style={styles.subtitle}>ملخص اليوم</Text>
+              <Text style={styles.muted}>{nutrition.filter((item) => new Date(item.loggedAt).toDateString() === new Date().toDateString()).reduce((sum, item) => sum + (item.calories || 0), 0)} سعرة · بروتين {nutrition.filter((item) => new Date(item.loggedAt).toDateString() === new Date().toDateString()).reduce((sum, item) => sum + (item.proteinGrams || 0), 0)} جم · كربوهيدرات {nutrition.filter((item) => new Date(item.loggedAt).toDateString() === new Date().toDateString()).reduce((sum, item) => sum + (item.carbsGrams || 0), 0)} جم · دهون {nutrition.filter((item) => new Date(item.loggedAt).toDateString() === new Date().toDateString()).reduce((sum, item) => sum + (item.fatGrams || 0), 0)} جم</Text>
               <Text style={styles.subtitle}>السجلات الأخيرة</Text>
               {nutrition.map((item) => <View key={item.id} style={styles.exercise}><Text style={styles.exerciseName}>{item.calories ?? '—'} سعرة · بروتين {item.proteinGrams ?? '—'} جم</Text><Text style={styles.muted}>{item.notes || new Date(item.loggedAt).toLocaleDateString('ar-EG')}</Text></View>)}
             </View>}

@@ -51,6 +51,7 @@
 - [x] Add conservative progression recommendations from the two latest completed sessions with pain/high-effort suppression.
 - [x] Display safe progression recommendations in web and mobile dashboards.
 - [x] Add admin feedback metrics and a latest-feedback review list.
+- [x] Capture post-workout perceived effort (1–10) and optional pain/symptom feedback from mobile and persist it when completing a workout.
 - [ ] Verify CI for the latest plan-generator and mobile-client commits.
 - [ ] Add database-backed integration tests using a disposable PostgreSQL service.
 

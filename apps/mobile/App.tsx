@@ -18,7 +18,7 @@ type CoachMessage = { role: 'user' | 'coach'; text: string };
 type Exercise = { id: string; nameAr: string; nameEn: string; descriptionAr: string; difficulty: string };
 type Workout = { id: string; status: string; startedAt: string; _count?: { sets: number } };
 type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; exercise?: { nameAr: string; nameEn: string } };
-type TrainingPlan = { id: string; title: string; goal: string; status: string; startDate?: string | null; _count?: { days: number }; days?: Array<{ id: string; dayNumber: number; title?: string | null; exercises: Array<{ id: string; sets: number; reps: string; restSeconds: number; exercise: { id: string; nameAr: string; nameEn: string; difficulty: string } }> }> };
+type TrainingPlan = { id: string; title: string; goal: string; status: string; startDate?: string | null; _count?: { days: number }; days?: Array<{ id: string; dayNumber: number; title?: string | null; exercises: Array<{ id: string; sets: number; repsMin: number; repsMax: number; durationSeconds?: number | null; restSeconds: number; exercise: { id: string; nameAr: string; nameEn: string; difficulty: string } }> }> };
 type Progression = { basedOnSessions: number; recommendations: Array<{ exerciseId: string; action: string; suggestedLoadKg: number | null; reason: string }>; safetyMessage: string };
 type NutritionLog = { id: string; calories?: number; proteinGrams?: number; carbsGrams?: number; fatGrams?: number; loggedAt: string; notes?: string };
 type Profile = { displayName: string; heightCm: string; weightKg: string; goal: string; experienceLevel: string; trainingDaysPerWeek: string; sessionMinutes: string; equipment: string; safetyNotes: string };
@@ -416,7 +416,7 @@ export default function App() {
                 <Text style={styles.subtitle}>تفاصيل {selectedPlan.title}</Text>
                 {(selectedPlan.days || []).map((day) => <View key={day.id}>
                   <Text style={styles.exerciseName}>اليوم {day.dayNumber}{day.title ? ` — ${day.title}` : ''}</Text>
-                  {day.exercises.map((entry) => <Text key={entry.id} style={styles.muted}>{entry.exercise.nameAr || entry.exercise.nameEn} · {entry.sets} مجموعات · {entry.reps} تكرار · راحة {entry.restSeconds} ثانية</Text>)}
+                  {day.exercises.map((entry) => <Text key={entry.id} style={styles.muted}>{entry.exercise.nameAr || entry.exercise.nameEn} · {entry.sets} مجموعات · {entry.repsMin}–{entry.repsMax} تكرار{entry.durationSeconds ? ` · مدة ${entry.durationSeconds} ثانية` : ''} · راحة {entry.restSeconds} ثانية</Text>)}
                 </View>)}
                 {selectedPlan.status !== 'ACTIVE' && <Pressable style={styles.primary} onPress={() => activatePlan(selectedPlan.id)} disabled={busy}><Text style={styles.primaryText}>تفعيل هذه الخطة</Text></Pressable>}
               </View>}

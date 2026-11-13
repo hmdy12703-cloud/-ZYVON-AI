@@ -72,3 +72,30 @@ test('rejects a catalog with too few suitable exercises', () => {
     /NOT_ENOUGH_SUITABLE_EXERCISES/,
   );
 });
+
+test('normalizes common English and Arabic equipment aliases', () => {
+  const days = buildPlanDays(profile({
+    experienceLevel: 'ADVANCED',
+    equipment: ['دمبلز', 'عقلة'],
+    trainingDaysPerWeek: 1,
+  }), [
+    ...exercises.filter((item) => ['1', '2', '3', '6'].includes(item.id)),
+    { id: '7', nameAr: 'سحب دمبل', nameEn: 'Dumbbell row', difficulty: 'INTERMEDIATE', equipment: ['dumbbells'] },
+    { id: '8', nameAr: 'عقلة', nameEn: 'Pull-up', difficulty: 'INTERMEDIATE', equipment: ['pull up bar'] },
+  ]);
+  const ids = days[0]!.exercises.map((item) => item.exerciseId);
+  assert.ok(ids.includes('7'));
+  assert.ok(ids.includes('8'));
+});
+
+test('does not treat partial equipment names as a match', () => {
+  const candidates: PlanCandidate[] = [
+    { id: 'a', nameAr: 'تمرين أ', nameEn: 'Exercise A', difficulty: 'BEGINNER', equipment: ['bar'] },
+    { id: 'b', nameAr: 'تمرين ب', nameEn: 'Exercise B', difficulty: 'BEGINNER', equipment: ['barbell'] },
+    { id: 'c', nameAr: 'تمرين ج', nameEn: 'Exercise C', difficulty: 'BEGINNER', equipment: ['barbell'] },
+  ];
+  assert.throws(
+    () => buildPlanDays(profile({ equipment: ['bar'] }), candidates),
+    /NOT_ENOUGH_SUITABLE_EXERCISES/,
+  );
+});

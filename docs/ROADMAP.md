@@ -53,6 +53,7 @@
 - [x] Add admin feedback metrics and a latest-feedback review list.
 - [x] Capture post-workout perceived effort (1–10) and optional pain/symptom feedback from mobile and persist it when completing a workout.
 - [x] Add mobile plan list, profile-based plan generation, plan detail review, and activation flow.
+- [x] Add user-scoped workout progress summary for the latest eight completed sessions and display it on mobile.
 - [ ] Verify CI for the latest plan-generator and mobile-client commits.
 - [ ] Add database-backed integration tests using a disposable PostgreSQL service.
 

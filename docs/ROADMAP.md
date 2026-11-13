@@ -33,7 +33,9 @@
 - [x] Web client displays training-plan day and exercise details.
 - [x] Authenticated server-side AI coach endpoint with provider configuration kept on the API.
 - [x] Arabic-first web chat panel with clear rule-based fallback labeling when no AI key is configured.
-- [x] Coach request validation tests for empty, oversized, and unexpected fields.
+- [x] Coach request validation tests for empty, oversized, whitespace-only, and unexpected fields.
+- [x] Authenticated nutrition log API with user-scoped reads/writes and bounded macro/calorie validation.
+- [x] Web nutrition entry form and recent-log history.
 - [ ] Verify the latest CI run after the most recent web workout-logging changes.
 - [ ] Add database-backed integration tests using a disposable PostgreSQL service.
 
@@ -45,6 +47,7 @@
 5. Replace browser sessionStorage tokens with secure HttpOnly cookie sessions, add rate limiting and CSRF protections, then deploy a staging environment.
 6. Build native Android/iOS clients after the web/API contracts stabilize; the current PWA is not a native app.
 7. Add PostgreSQL-backed integration tests and automated database migration checks.
+8. Add nutrition summaries, daily targets, and progress charts only after collecting validated user-entered data.
 
 ## Status policy
 A task is complete only after its files are committed and the relevant checks have passed. A design document is not proof of a working feature.

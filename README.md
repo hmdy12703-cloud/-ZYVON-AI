@@ -253,6 +253,11 @@ Start with `pnpm --filter @zyvon/mobile dev`. This is a development starter, not
 
 The authenticated `GET /workouts/progress` endpoint returns up to eight recent completed sessions, completed-set counts, and estimated external training volume (repetitions × recorded load in kg). The mobile dashboard presents these metrics as a lightweight history summary. Bodyweight and duration-only sets are counted as completed sets but are not included in kilogram volume.
 
+
+### Plan-day workout linking
+
+Active training plans can start a session from a specific scheduled day. The API stores the selected `planDayId`, verifies that the day belongs to the signed-in user's plan, and only accepts exercises assigned to that day when logging sets. Standalone sessions remain available without a plan-day link.
+
 ### Administrator tools
 
 Accounts with the `ADMIN` role can open the administrator panel in the web dashboard. It displays aggregate platform counts and lets an administrator publish or archive exercise records. The API applies both JWT authentication and an administrator-role guard. Exercise creation is available through the protected API; a full visual exercise editor, user support tools, audit history, and role provisioning workflow remain future work.

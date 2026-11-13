@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "ZYVON AI",
+    "slug": "zyvon-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.zyvonai.mobile"
+    },
+    "android": {
+      "package": "com.zyvonai.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#071422"
+      }
+    }
+  }
+}

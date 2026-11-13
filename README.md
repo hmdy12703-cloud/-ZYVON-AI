@@ -157,7 +157,7 @@ Copy `.env.example` to `.env` and set a strong random `JWT_ACCESS_SECRET` plus y
 - Root workspace configuration: pnpm, TypeScript, ignore rules, and environment template.
 
 ### Development status
-The repository now contains the product specification and the first monorepo/database foundations. This is **not yet a runnable end-user application**: authentication, API modules, mobile screens, web screens, database migrations, AI integration, and automated tests remain to be implemented and verified.
+The repository contains product specifications, monorepo/database foundations, and an initial NestJS API with authentication and protected profile onboarding endpoints. This is **not yet a runnable end-user application**. Mobile screens, web screens, database migrations, AI integration, and automated tests remain to be implemented and verified.
 
 ### Phone-only workflow
 Open the repository in GitHub on your phone to review files and commits. For running builds and tests without a computer, use a browser-based development environment that supports Node.js and pnpm; do not paste secrets into public files or chat.
@@ -170,6 +170,8 @@ The repository now includes a NestJS API under `apps/api`:
 - `POST /api/v1/auth/register` — create an account using a bcrypt password hash.
 - `POST /api/v1/auth/login` — verify credentials and issue a short-lived JWT.
 - `GET /api/v1/users/me` — protected route requiring `Authorization: Bearer <token>`; checks the account is still active in PostgreSQL.
+- `GET /api/v1/users/me/profile` — retrieve the signed-in user's fitness profile.
+- `PATCH /api/v1/users/me/profile` — create or update onboarding data (display name, birth date, height, weight, language, goal, experience, weekly training days, session duration, equipment, and optional safety notes). Only the authenticated user's own profile can be changed; unknown fields are rejected.
 
 ### Run locally
 1. Install Node.js 20+ and pnpm 9.
@@ -184,3 +186,10 @@ The API listens on port 4000 by default. For deployment, use HTTPS, a secret man
 
 ### Verification status
 A GitHub Actions workflow has been added to validate the Prisma schema and compile the API on pushes and pull requests. The workflow must run in GitHub before this slice can be marked build-verified. A live PostgreSQL integration test has not yet been run.
+
+
+### Profile onboarding API
+
+The profile endpoints are protected by the JWT guard. `PATCH` validates input and rejects unknown properties; supported ranges include height 100–230 cm, weight 25–350 kg, training 1–7 days/week, and sessions 10–180 minutes. Equipment is limited to 30 short labels, and optional safety notes are limited to 1,000 characters. A first profile can be created without a display name; the account email prefix is used as a temporary default. The profile endpoint returns only the signed-in user's record.
+
+Build verification is pending until the latest GitHub Actions run completes. No live database integration test has been performed.

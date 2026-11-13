@@ -31,6 +31,7 @@ type Workout = { id: string; startedAt: string; completedAt: string | null; stat
 type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; completed: boolean; exercise?: { nameAr: string; nameEn: string } };
 type WorkoutDetail = { id: string; status: string; sets: WorkoutSet[] };
 type TrainingPlan = { id: string; title: string; goal: string; status: string; _count?: { days: number } };
+type PlanDetail = TrainingPlan & { days: Array<{ id: string; dayNumber: number; title: string; notes: string | null; exercises: Array<{ id: string; sets: number; repsMin: number; repsMax: number; restSeconds: number; exercise: { nameAr: string; nameEn: string; difficulty: string } }> }> };
 
 const emptyProfile: Profile = {
   displayName: '',
@@ -53,6 +54,7 @@ export default function App() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [plans, setPlans] = useState<TrainingPlan[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<PlanDetail | null>(null);
   const [activeWorkout, setActiveWorkout] = useState<string | null>(null);
   const [reps, setReps] = useState('10');
   const [loadKg, setLoadKg] = useState('');
@@ -207,6 +209,19 @@ export default function App() {
     }
   }
 
+  async function viewPlan(planId: string) {
+    setBusy(true);
+    setError('');
+    try {
+      const detail: PlanDetail = await api(`/plans/${planId}`);
+      setSelectedPlan(detail);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر تحميل تفاصيل الخطة');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function activatePlan(planId: string) {
     setBusy(true);
     setError('');
@@ -214,6 +229,7 @@ export default function App() {
       await api(`/plans/${planId}/activate`, { method: 'POST', body: JSON.stringify({}) });
       setMessage('تم تفعيل الخطة التدريبية.');
       await loadDashboard();
+      await viewPlan(planId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر تفعيل الخطة');
     } finally {
@@ -338,8 +354,9 @@ export default function App() {
         </section>
         <section className="panel">
           <div className="section-heading"><div><p className="eyebrow">PERSONAL TRAINING</p><h2>خططي التدريبية</h2></div><button className="outline" onClick={generatePlan} disabled={busy}>إنشاء خطة</button></div>
-          {plans.length ? <div className="history-list">{plans.map((plan) => <div className="history-row" key={plan.id}><div><strong>{plan.title}</strong><p>{plan._count?.days ?? 0} أيام · {plan.goal}</p></div><div className="plan-actions"><span className={plan.status === 'ACTIVE' ? 'status done' : 'status'}>{plan.status === 'ACTIVE' ? 'نشطة' : plan.status === 'DRAFT' ? 'مسودة' : plan.status}</span>{plan.status !== 'ACTIVE' && <button className="outline" disabled={busy} onClick={() => activatePlan(plan.id)}>تفعيل</button>}</div></div>)}</div> : <p className="muted">أنشئ خطة أولية بناءً على ملفك الرياضي والتمارين المنشورة.</p>}
+          {plans.length ? <div className="history-list">{plans.map((plan) => <div className="history-row" key={plan.id}><div><strong>{plan.title}</strong><p>{plan._count?.days ?? 0} أيام · {plan.goal}</p></div><div className="plan-actions"><span className={plan.status === 'ACTIVE' ? 'status done' : 'status'}>{plan.status === 'ACTIVE' ? 'نشطة' : plan.status === 'DRAFT' ? 'مسودة' : plan.status}</span><button className="outline" disabled={busy} onClick={() => viewPlan(plan.id)}>التفاصيل</button>{plan.status !== 'ACTIVE' && <button className="outline" disabled={busy} onClick={() => activatePlan(plan.id)}>تفعيل</button>}</div></div>)}</div> : <p className="muted">أنشئ خطة أولية بناءً على ملفك الرياضي والتمارين المنشورة.</p>}
         </section>
+        {selectedPlan && <section className="panel plan-detail-panel"><div className="section-heading"><div><p className="eyebrow">PLAN DETAILS</p><h2>{selectedPlan.title}</h2></div><button className="ghost" onClick={() => setSelectedPlan(null)}>إغلاق</button></div><div className="plan-days">{selectedPlan.days.map((day) => <article className="plan-day" key={day.id}><h3>{day.title}</h3>{day.notes && <p className="muted">{day.notes}</p>}{day.exercises.map((item) => <div className="plan-exercise" key={item.id}><div><strong>{item.exercise.nameAr}</strong><small>{item.exercise.nameEn}</small></div><span>{item.sets} مجموعات × {item.repsMin}–{item.repsMax}</span><span>راحة {item.restSeconds} ث</span></div>)}</article>)}</div></section>}
         <section className="panel history-panel">
           <div className="section-heading"><div><p className="eyebrow">YOUR ACTIVITY</p><h2>سجل التدريب</h2></div><span className="pill">{workouts.length} جلسات</span></div>
           {workouts.length ? <div className="history-list">{workouts.map((workout) => <div className="history-row" key={workout.id}><div><strong>{new Date(workout.startedAt).toLocaleDateString('ar-EG')}</strong><p>{workout._count?.sets ?? 0} مجموعات مسجلة</p></div><span className={workout.status === 'COMPLETED' ? 'status done' : 'status'}>{workout.status === 'COMPLETED' ? 'مكتملة' : 'قيد التنفيذ'}</span></div>)}</div> : <p className="muted">لم تسجل جلسات بعد. ابدأ أول جلسة عندما تكون مستعدًا.</p>}

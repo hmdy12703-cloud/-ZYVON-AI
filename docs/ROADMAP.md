@@ -45,7 +45,7 @@
 - [x] Mobile active-session restoration now reloads saved sets and uses the highest existing set number to avoid duplicate numbering.
 - [x] Mobile nutrition screen shows same-day calorie and macro totals from user-entered logs.
 - [x] Web nutrition entry form and recent-log history.
-- [ ] Verify the latest CI run after the most recent web workout-logging changes.
+- [ ] Verify CI for the latest plan-generator and mobile-client commits.
 - [ ] Add database-backed integration tests using a disposable PostgreSQL service.
 
 ## Next build tasks
@@ -53,13 +53,8 @@
 2. Add admin exercise editing (not only create/publish/archive), audit events, and user-support workflows.
 3. Add mobile plan browsing/generation/activation and full completed-workout detail/history views.
 4. Add database-backed integration tests using a disposable PostgreSQL service.
-4. Expand AI Coach with conversation persistence, structured exercise recommendations, voice input/output, rate limits, and additional safety regression tests. Configure OPENAI_API_KEY only in the API deployment secret store to enable provider-backed responses.
-5. Replace browser sessionStorage tokens with secure HttpOnly cookie sessions, add rate limiting and CSRF protections, then deploy a staging environment.
-6. Expand the Expo Android/iOS client with workout tracking, profile onboarding, nutrition logs, localization, secure token storage, and device QA; the current native client is an early starter, not a store release.
-7. Establish reviewed Prisma migrations, HTTPS/reverse proxy, secrets management, database backups/restore drills, monitoring, and a production deployment.
-8. Complete device QA, signed Android/iOS builds, privacy policy/terms, accessibility, and store submission.
-5. Expand AI Coach with conversation persistence, structured exercise recommendations, voice input/output, rate limits, and additional safety regression tests. Configure OPENAI_API_KEY only in the API deployment secret store to enable provider-backed responses.
-6. Replace browser sessionStorage tokens with secure HttpOnly cookie sessions, add rate limiting and CSRF protections, then deploy a staging environment.
+5. Expand AI Coach with conversation persistence, structured exercise recommendations, voice input/output, rate limits, and additional safety regression tests. Configure `OPENAI_API_KEY` only in the API deployment secret store to enable provider-backed responses.
+6. Replace browser `sessionStorage` tokens with secure HttpOnly cookie sessions, add rate limiting and CSRF protections, then deploy a staging environment.
 7. Establish reviewed Prisma migrations, HTTPS/reverse proxy, secrets management, database backups/restore drills, monitoring, and a production deployment.
 8. Complete device QA, signed Android/iOS builds, privacy policy/terms review, accessibility, and store submission.
 9. Add nutrition targets and progress charts only after collecting validated user-entered data.

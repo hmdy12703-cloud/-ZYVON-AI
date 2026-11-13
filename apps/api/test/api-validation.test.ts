@@ -54,3 +54,19 @@ test('rejects null repetitions in workout set payloads', async () => {
   const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
   assert.ok(errors.some((error) => error.property === 'reps'));
 });
+
+
+test('accepts bounded post-workout effort and optional feedback', async () => {
+  const { CompleteWorkoutDto } = await import('../src/workouts/dto/complete-workout.dto');
+  const dto = plainToInstance(CompleteWorkoutDto, { perceivedEffort: 7, feedback: 'No pain, normal fatigue' });
+  const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+  assert.equal(errors.length, 0);
+});
+
+test('rejects out-of-range post-workout effort and oversized feedback', async () => {
+  const { CompleteWorkoutDto } = await import('../src/workouts/dto/complete-workout.dto');
+  const dto = plainToInstance(CompleteWorkoutDto, { perceivedEffort: 11, feedback: 'x'.repeat(1001) });
+  const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+  assert.ok(errors.some((error) => error.property === 'perceivedEffort'));
+  assert.ok(errors.some((error) => error.property === 'feedback'));
+});

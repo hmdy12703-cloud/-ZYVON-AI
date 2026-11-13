@@ -111,7 +111,7 @@ export default function App() {
       if (activeId) {
         const detail = await request(`/workouts/${activeId}`);
         setActiveSets(Array.isArray(detail.sets) ? detail.sets : []);
-        setActivePlanExerciseIds(detail.planDay?.exercises.map((item) => item.exerciseId) ?? []);
+        setActivePlanExerciseIds(detail.planDay?.exercises.map((item: { exerciseId: string }) => item.exerciseId) ?? []);
       } else {
         setActiveSets([]);
         setActivePlanExerciseIds([]);

@@ -189,7 +189,7 @@ The repository includes a NestJS API under `apps/api`:
 - `POST /api/v1/coach/chat` — authenticated fitness-coach chat. The API sends profile context to a server-side OpenAI-compatible provider when configured; otherwise it returns an explicitly labeled rule-based starter response. Provider keys must remain in API environment secrets.
 - `PATCH /api/v1/users/me/profile` — create or update onboarding data (display name, birth date, height, weight, language, goal, experience, weekly training days, session duration, equipment, and optional safety notes). Only the authenticated user's own profile can be changed; unknown fields are rejected.
 
-### Run locally
+### Mobile device setup\n\nSee [Mobile Setup](docs/MOBILE_SETUP.md) for Expo API URL configuration, physical-device networking, and Android/iOS export commands.\n\n### Run locally
 1. Install Node.js 20+ and pnpm 9.
 2. Start PostgreSQL and create a database named `zyvon_ai`.
 3. Copy `apps/api/.env.example` to `apps/api/.env` (or configure the same variables in the process environment).

@@ -31,6 +31,9 @@
 - [x] CI workflow includes Prisma validation, API build, API DTO tests, and web build.
 - [x] Web client restores an active workout from the API and displays its saved sets after reload.
 - [x] Web client displays training-plan day and exercise details.
+- [x] Authenticated server-side AI coach endpoint with provider configuration kept on the API.
+- [x] Arabic-first web chat panel with clear rule-based fallback labeling when no AI key is configured.
+- [x] Coach request validation tests for empty, oversized, and unexpected fields.
 - [ ] Verify the latest CI run after the most recent web workout-logging changes.
 - [ ] Add database-backed integration tests using a disposable PostgreSQL service.
 
@@ -38,9 +41,10 @@
 1. Load active workout sets from the API so set numbering survives refreshes and multiple devices.
 2. Add editable exercise selection and full workout detail/history views.
 3. Add editable training-plan details, progression logic, and plan ownership regression tests.
-4. Add the real AI Coach behind a server-side provider adapter, structured outputs, safety checks, privacy controls, and tests.
-5. Add secure production authentication/session handling and deploy a staging environment.
+4. Expand AI Coach with conversation persistence, structured exercise recommendations, voice input/output, rate limits, and additional safety regression tests. Configure OPENAI_API_KEY only in the API deployment secret store to enable provider-backed responses.
+5. Replace browser sessionStorage tokens with secure HttpOnly cookie sessions, add rate limiting and CSRF protections, then deploy a staging environment.
 6. Build native Android/iOS clients after the web/API contracts stabilize; the current PWA is not a native app.
+7. Add PostgreSQL-backed integration tests and automated database migration checks.
 
 ## Status policy
 A task is complete only after its files are committed and the relevant checks have passed. A design document is not proof of a working feature.

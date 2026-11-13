@@ -21,13 +21,21 @@
 | 5. Clients | Expo mobile app, Next.js web/admin, localization | Main journeys work in Arabic and English |
 | 6. Release readiness | CI, security checks, deployment, device QA | Build, tests, and smoke tests pass |
 
-## Immediate next build tasks
-1. Add monorepo workspace configuration.
-2. Add shared TypeScript contracts and localization resources.
-3. Add Prisma schema and initial migration.
-4. Add API health endpoint and authentication module.
-5. Add a minimal mobile onboarding and workout shell.
-6. Add a minimal web/admin shell with server-side role checks.
+## Current implementation status
+- [x] Monorepo workspace, shared contracts, localization starter, and Prisma schema.
+- [x] NestJS API health, authentication, profile, exercise catalog, and workout tracking slices.
+- [x] React/Vite web MVP for authentication, onboarding, exercise browsing, workout logging, and history.
+- [x] CI workflow includes Prisma validation, API build, API DTO tests, and web build.
+- [ ] Verify the latest CI run after the most recent web workout-logging changes.
+- [ ] Add database-backed integration tests using a disposable PostgreSQL service.
+
+## Next build tasks
+1. Load active workout sets from the API so set numbering survives refreshes and multiple devices.
+2. Add editable exercise selection and full workout detail/history views.
+3. Implement training-plan generation and plan ownership endpoints.
+4. Add AI Coach behind a server-side provider adapter, structured outputs, safety checks, and tests.
+5. Add secure production authentication/session handling and deploy a staging environment.
+6. Build native Android/iOS clients after the web/API contracts stabilize.
 
 ## Status policy
 A task is complete only after its files are committed and the relevant checks have passed. A design document is not proof of a working feature.

@@ -79,9 +79,9 @@ test('normalizes common English and Arabic equipment aliases', () => {
     equipment: ['دمبلز', 'عقلة'],
     trainingDaysPerWeek: 1,
   }), [
-    ...exercises.filter((item) => ['1', '2', '3', '6'].includes(item.id)),
     { id: '7', nameAr: 'سحب دمبل', nameEn: 'Dumbbell row', difficulty: 'INTERMEDIATE', equipment: ['dumbbells'] },
     { id: '8', nameAr: 'عقلة', nameEn: 'Pull-up', difficulty: 'INTERMEDIATE', equipment: ['pull up bar'] },
+    { id: '9', nameAr: 'ضغط', nameEn: 'Push-up', difficulty: 'BEGINNER', equipment: [] },
   ]);
   const ids = days[0]!.exercises.map((item) => item.exerciseId);
   assert.ok(ids.includes('7'));

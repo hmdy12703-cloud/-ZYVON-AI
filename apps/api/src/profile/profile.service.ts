@@ -26,7 +26,7 @@ export class ProfileService {
     const createData: Prisma.UserProfileCreateInput = {
       user: { connect: { id: userId } },
       ...fields,
-      displayName: displayName ?? email.split('@')[0].slice(0, 60),
+      displayName: displayName ?? (email.split('@')[0] || 'Athlete').slice(0, 60),
       ...(birthDate === null ? { birthDate: null } : birthDate !== undefined ? { birthDate: new Date(birthDate) } : {}),
       ...(equipment !== undefined
         ? { equipment: equipment as Prisma.InputJsonValue }

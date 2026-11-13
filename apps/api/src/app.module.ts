@@ -8,6 +8,7 @@ import { WorkoutsModule } from './workouts/workouts.module';
 import { PlansModule } from './plans/plans.module';
 import { CoachModule } from './coach/coach.module';
 import { NutritionModule } from './nutrition/nutrition.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { NutritionModule } from './nutrition/nutrition.module';
     PlansModule,
     CoachModule,
     NutritionModule,
+    AdminModule,
   ],
   controllers: [HealthController],
 })

@@ -33,12 +33,15 @@ test('allows requests up to the configured per-IP limit', () => {
 
 test('blocks requests above the limit and provides a retry delay', () => {
   const middleware = createIpRateLimit({ windowMs: 60_000, maxRequests: 1, message: 'Too many attempts' }, () => 1_000);
-  const next = (() => assert.fail('next must not run for a blocked request')) as NextFunction;
+  let nextCalls = 0;
+  const next = (() => { nextCalls += 1; }) as NextFunction;
 
   middleware(makeRequest('192.0.2.2'), makeResponse().response, next);
+  assert.equal(nextCalls, 1);
   const blocked = makeResponse();
   middleware(makeRequest('192.0.2.2'), blocked.response, next);
 
+  assert.equal(nextCalls, 1);
   assert.equal(blocked.statusCode, 429);
   assert.equal(blocked.headers['Retry-After'], '60');
   assert.equal(blocked.headers['RateLimit-Remaining'], '0');

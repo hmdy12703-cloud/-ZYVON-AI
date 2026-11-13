@@ -5,6 +5,7 @@ import { AddWorkoutSetDto } from './dto/add-workout-set.dto';
 import { ListWorkoutsDto } from './dto/list-workouts.dto';
 import { StartWorkoutDto } from './dto/start-workout.dto';
 import { CompleteWorkoutDto } from './dto/complete-workout.dto';
+import { summarizeWorkoutProgress } from './workout-progress';
 
 @Injectable()
 export class WorkoutsService {
@@ -53,6 +54,28 @@ export class WorkoutsService {
     return {
       data: items,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async progress(userId: string) {
+    const sessions = await this.prisma.workoutSession.findMany({
+      where: { userId, status: WorkoutStatus.COMPLETED },
+      orderBy: { completedAt: 'desc' },
+      take: 8,
+      select: {
+        id: true,
+        completedAt: true,
+        sets: { select: { reps: true, loadKg: true, completed: true } },
+      },
+    });
+    const history = summarizeWorkoutProgress(sessions).reverse();
+    return {
+      sessions: history,
+      totals: {
+        completedSessions: history.length,
+        completedSets: history.reduce((sum, item) => sum + item.completedSets, 0),
+        volumeKg: Math.round(history.reduce((sum, item) => sum + item.volumeKg, 0) * 10) / 10,
+      },
     };
   }
 

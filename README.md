@@ -248,6 +248,11 @@ Copy `apps/mobile/.env.example` to `apps/mobile/.env` and set `EXPO_PUBLIC_API_B
 Start with `pnpm --filter @zyvon/mobile dev`. This is a development starter, not a signed store-ready APK/IPA. Device QA, secure token persistence, full native workout/profile/nutrition screens, app icons/splash assets, and store signing remain release tasks.
 
 
+
+### Workout progress summary
+
+The authenticated `GET /workouts/progress` endpoint returns up to eight recent completed sessions, completed-set counts, and estimated external training volume (repetitions × recorded load in kg). The mobile dashboard presents these metrics as a lightweight history summary. Bodyweight and duration-only sets are counted as completed sets but are not included in kilogram volume.
+
 ### Administrator tools
 
 Accounts with the `ADMIN` role can open the administrator panel in the web dashboard. It displays aggregate platform counts and lets an administrator publish or archive exercise records. The API applies both JWT authentication and an administrator-role guard. Exercise creation is available through the protected API; a full visual exercise editor, user support tools, audit history, and role provisioning workflow remain future work.

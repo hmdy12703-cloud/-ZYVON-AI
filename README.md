@@ -180,6 +180,8 @@ The repository includes a NestJS API under `apps/api`:
 - `GET /api/v1/workouts/:id` — retrieve one of the signed-in user's sessions and its logged sets.
 - `POST /api/v1/workouts/:id/sets` — log a set against a published exercise in an active session.
 - `PATCH /api/v1/workouts/:id/complete` — complete an active session.
+- `GET /api/v1/nutrition/logs` — retrieve the signed-in user's 30 most recent nutrition logs.
+- `POST /api/v1/nutrition/logs` — add a nutrition log with validated calories and macros.
 - `POST /api/v1/coach/chat` — authenticated fitness-coach chat. The API sends profile context to a server-side OpenAI-compatible provider when configured; otherwise it returns an explicitly labeled rule-based starter response. Provider keys must remain in API environment secrets.
 - `PATCH /api/v1/users/me/profile` — create or update onboarding data (display name, birth date, height, weight, language, goal, experience, weekly training days, session duration, equipment, and optional safety notes). Only the authenticated user's own profile can be changed; unknown fields are rejected.
 
@@ -226,3 +228,8 @@ A responsive Arabic-first React/Vite client lives in `apps/web`. It includes acc
 The dashboard includes an Arabic chat panel backed by `POST /api/v1/coach/chat`. The endpoint requires authentication, accepts a message of 1–1,000 characters, and reads only the signed-in user's fitness profile. When `OPENAI_API_KEY` is configured on the API server, it calls an OpenAI-compatible Chat Completions endpoint using `OPENAI_BASE_URL` and `OPENAI_MODEL`. The key must never be placed in a browser variable or committed to Git.
 
 Without a provider key, the endpoint returns a clearly labeled `RULE_BASED` starter response; this is not represented as a live AI model. The provider prompt instructs the coach not to diagnose injuries, prescribe medication, recommend extreme dieting, or encourage exercising through pain. The coach is educational and not a medical service. Configure the variables in `apps/api/.env.example` through your deployment secret manager.
+
+
+### Nutrition logging
+
+The signed-in dashboard can save calories, protein, carbohydrates, fats, and optional meal notes. All reads and writes are scoped to the authenticated account. The API validates numeric ranges and returns the 30 most recent entries. The first version records values entered by the user; it does not estimate food nutrition or claim that logged values are clinically accurate.

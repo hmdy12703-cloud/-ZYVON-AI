@@ -180,6 +180,7 @@ The repository includes a NestJS API under `apps/api`:
 - `GET /api/v1/workouts/:id` — retrieve one of the signed-in user's sessions and its logged sets.
 - `POST /api/v1/workouts/:id/sets` — log a set against a published exercise in an active session.
 - `PATCH /api/v1/workouts/:id/complete` — complete an active session.
+- `POST /api/v1/coach/chat` — authenticated fitness-coach chat. The API sends profile context to a server-side OpenAI-compatible provider when configured; otherwise it returns an explicitly labeled rule-based starter response. Provider keys must remain in API environment secrets.
 - `PATCH /api/v1/users/me/profile` — create or update onboarding data (display name, birth date, height, weight, language, goal, experience, weekly training days, session duration, equipment, and optional safety notes). Only the authenticated user's own profile can be changed; unknown fields are rejected.
 
 ### Run locally
@@ -218,3 +219,10 @@ The API CI job validates the Prisma schema, generates Prisma Client, builds the 
 ### Web application (early MVP / installable PWA)
 
 A responsive Arabic-first React/Vite client lives in `apps/web`. It includes account registration/login, profile onboarding, a published exercise catalog, workout start, per-set repetition and optional weight logging, workout completion, and workout history. Set numbering is restored from the API for the active workout. A first-pass training-plan generator is available based on profile settings and published exercises; it is rule-based, not an AI-generated coaching plan. It uses a short-lived access token in `sessionStorage`; production should move authentication to secure, HttpOnly cookies before public launch. Configure `VITE_API_BASE_URL` and set the API `CORS_ORIGIN` to the web app origin. Local web development runs on `http://localhost:5173`; the API runs on port `4000`.
+
+
+### ZYVON AI Coach
+
+The dashboard includes an Arabic chat panel backed by `POST /api/v1/coach/chat`. The endpoint requires authentication, accepts a message of 1–1,000 characters, and reads only the signed-in user's fitness profile. When `OPENAI_API_KEY` is configured on the API server, it calls an OpenAI-compatible Chat Completions endpoint using `OPENAI_BASE_URL` and `OPENAI_MODEL`. The key must never be placed in a browser variable or committed to Git.
+
+Without a provider key, the endpoint returns a clearly labeled `RULE_BASED` starter response; this is not represented as a live AI model. The provider prompt instructs the coach not to diagnose injuries, prescribe medication, recommend extreme dieting, or encourage exercising through pain. The coach is educational and not a medical service. Configure the variables in `apps/api/.env.example` through your deployment secret manager.

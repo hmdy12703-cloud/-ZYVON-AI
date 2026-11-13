@@ -251,3 +251,14 @@ Start with `pnpm --filter @zyvon/mobile dev`. This is a development starter, not
 ### Administrator tools
 
 Accounts with the `ADMIN` role can open the administrator panel in the web dashboard. It displays aggregate platform counts and lets an administrator publish or archive exercise records. The API applies both JWT authentication and an administrator-role guard. Exercise creation is available through the protected API; a full visual exercise editor, user support tools, audit history, and role provisioning workflow remain future work.
+
+
+### Administrator access
+
+Public registration always creates a regular `USER`; the API never accepts a role from the registration payload. To promote an account you control, first register it, then run the following command from a trusted deployment environment with the production `DATABASE_URL` configured:
+
+```bash
+ADMIN_BOOTSTRAP_EMAIL=you@example.com pnpm --filter @zyvon/api admin:promote
+```
+
+The script only updates the matching existing account and does not expose an HTTP endpoint for privilege escalation. Keep database credentials private and only promote trusted operator accounts. Sign out and sign back in after promotion so the web dashboard reloads the role.

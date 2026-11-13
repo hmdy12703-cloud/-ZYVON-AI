@@ -262,3 +262,14 @@ ADMIN_BOOTSTRAP_EMAIL=you@example.com pnpm --filter @zyvon/api admin:promote
 ```
 
 The script only updates the matching existing account and does not expose an HTTP endpoint for privilege escalation. Keep database credentials private and only promote trusted operator accounts. Sign out and sign back in after promotion so the web dashboard reloads the role.
+
+
+## Docker deployment (single server)
+
+1. Install Docker Engine and the Docker Compose plugin on a Linux server.
+2. Copy `.env.example` to `.env`; set a unique database password and a cryptographically random `JWT_ACCESS_SECRET` of at least 32 characters. Never commit the real `.env` file.
+3. Start the stack with `docker compose up -d --build`.
+4. Open `http://SERVER_IP:8080` (or set `WEB_PORT`). The web container proxies `/api/v1` to the API; PostgreSQL data is stored in the named `zyvon-postgres` volume.
+5. Register your own account and promote it using the administrator bootstrap command above.
+
+The API container applies the current Prisma schema with `db:push` on startup because this repository currently uses schema synchronization rather than a committed migration history. Before a production launch, establish and review a migration baseline, configure HTTPS and domain-level reverse proxying, restrict server/network access, set backup and restore procedures for PostgreSQL, and test a full restore. Configure `OPENAI_API_KEY` only on the server if you want provider-backed AI replies; without it, the coach uses its clearly labeled rule-based fallback. The Docker stack is a deployment foundation, not a substitute for production security review or store signing.

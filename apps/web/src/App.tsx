@@ -31,6 +31,7 @@ type Workout = { id: string; startedAt: string; completedAt: string | null; stat
 type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; completed: boolean; exercise?: { nameAr: string; nameEn: string } };
 type WorkoutDetail = { id: string; status: string; sets: WorkoutSet[] };
 type TrainingPlan = { id: string; title: string; goal: string; status: string; _count?: { days: number } };
+type CoachMessage = { role: 'user' | 'coach'; text: string; mode?: 'AI' | 'RULE_BASED' };
 type PlanDetail = TrainingPlan & { days: Array<{ id: string; dayNumber: number; title: string; notes: string | null; exercises: Array<{ id: string; sets: number; repsMin: number; repsMax: number; restSeconds: number; exercise: { nameAr: string; nameEn: string; difficulty: string } }> }> };
 
 const emptyProfile: Profile = {
@@ -67,6 +68,9 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [coachMessages, setCoachMessages] = useState<CoachMessage[]>([]);
+  const [coachInput, setCoachInput] = useState('');
+  const [coachMode, setCoachMode] = useState<'AI' | 'RULE_BASED' | null>(null);
 
   const api = useCallback(async (path: string, init: RequestInit = {}) => {
     const response = await fetch(`${API_BASE}${path}`, {
@@ -237,6 +241,25 @@ export default function App() {
     }
   }
 
+  async function askCoach(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const question = coachInput.trim();
+    if (!question || busy) return;
+    setCoachMessages((items) => [...items, { role: 'user', text: question }]);
+    setCoachInput('');
+    setBusy(true);
+    setError('');
+    try {
+      const result = await api('/coach/chat', { method: 'POST', body: JSON.stringify({ message: question }) });
+      setCoachMessages((items) => [...items, { role: 'coach', text: result.reply, mode: result.mode }]);
+      setCoachMode(result.mode);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر الاتصال بالمدرب');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function startWorkout() {
     setBusy(true);
     try {
@@ -357,6 +380,19 @@ export default function App() {
           {plans.length ? <div className="history-list">{plans.map((plan) => <div className="history-row" key={plan.id}><div><strong>{plan.title}</strong><p>{plan._count?.days ?? 0} أيام · {plan.goal}</p></div><div className="plan-actions"><span className={plan.status === 'ACTIVE' ? 'status done' : 'status'}>{plan.status === 'ACTIVE' ? 'نشطة' : plan.status === 'DRAFT' ? 'مسودة' : plan.status}</span><button className="outline" disabled={busy} onClick={() => viewPlan(plan.id)}>التفاصيل</button>{plan.status !== 'ACTIVE' && <button className="outline" disabled={busy} onClick={() => activatePlan(plan.id)}>تفعيل</button>}</div></div>)}</div> : <p className="muted">أنشئ خطة أولية بناءً على ملفك الرياضي والتمارين المنشورة.</p>}
         </section>
         {selectedPlan && <section className="panel plan-detail-panel"><div className="section-heading"><div><p className="eyebrow">PLAN DETAILS</p><h2>{selectedPlan.title}</h2></div><button className="ghost" onClick={() => setSelectedPlan(null)}>إغلاق</button></div><div className="plan-days">{selectedPlan.days.map((day) => <article className="plan-day" key={day.id}><h3>{day.title}</h3>{day.notes && <p className="muted">{day.notes}</p>}{day.exercises.map((item) => <div className="plan-exercise" key={item.id}><div><strong>{item.exercise.nameAr}</strong><small>{item.exercise.nameEn}</small></div><span>{item.sets} مجموعات × {item.repsMin}–{item.repsMax}</span><span>راحة {item.restSeconds} ث</span></div>)}</article>)}</div></section>}
+        <section className="panel coach-panel">
+          <div className="section-heading"><div><p className="eyebrow">ZYVON AI COACH</p><h2>اسأل مدربك الذكي</h2></div><span className="pill">{coachMode === 'AI' ? 'AI متصل' : coachMode === 'RULE_BASED' ? 'وضع إرشادي' : 'جاهز'}</span></div>
+          <p className="muted">اسأل عن التمرين أو تنظيم جدولك أو هدفك. يراعي المدرب بيانات ملفك وملاحظات السلامة.</p>
+          <div className="coach-thread" aria-live="polite">
+            {!coachMessages.length && <p className="muted">مثال: إزاي أبدأ إحماء مناسب قبل التمرين؟</p>}
+            {coachMessages.map((item, index) => <article className={item.role === 'user' ? 'coach-bubble user-bubble' : 'coach-bubble'} key={index}><strong>{item.role === 'user' ? 'أنت' : 'ZYVON AI'}</strong><p>{item.text}</p>{item.mode === 'RULE_BASED' && <small>إرشادات أولية آلية</small>}</article>)}
+          </div>
+          <form className="coach-form" onSubmit={askCoach}>
+            <textarea value={coachInput} onChange={(event) => setCoachInput(event.target.value)} maxLength={1000} rows={2} placeholder="اكتب سؤالك للمدرب..." required />
+            <button className="primary" disabled={busy || !coachInput.trim()}>{busy ? 'جارٍ التفكير...' : 'إرسال السؤال'}</button>
+          </form>
+          <small className="muted">إرشادات لياقة عامة وليست تشخيصًا طبيًا. عند وجود ألم أو أعراض غير معتادة، أوقف التمرين واطلب تقييمًا مختصًا.</small>
+        </section>
         <section className="panel history-panel">
           <div className="section-heading"><div><p className="eyebrow">YOUR ACTIVITY</p><h2>سجل التدريب</h2></div><span className="pill">{workouts.length} جلسات</span></div>
           {workouts.length ? <div className="history-list">{workouts.map((workout) => <div className="history-row" key={workout.id}><div><strong>{new Date(workout.startedAt).toLocaleDateString('ar-EG')}</strong><p>{workout._count?.sets ?? 0} مجموعات مسجلة</p></div><span className={workout.status === 'COMPLETED' ? 'status done' : 'status'}>{workout.status === 'COMPLETED' ? 'مكتملة' : 'قيد التنفيذ'}</span></div>)}</div> : <p className="muted">لم تسجل جلسات بعد. ابدأ أول جلسة عندما تكون مستعدًا.</p>}

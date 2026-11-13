@@ -26,7 +26,7 @@ export class ProfileService {
       user: { connect: { id: userId } },
       displayName: dto.displayName ?? email.split('@')[0].slice(0, 60),
       ...fields,
-      ...(birthDate !== undefined ? { birthDate: new Date(birthDate) } : {}),
+      ...(birthDate === null ? { birthDate: null } : birthDate !== undefined ? { birthDate: new Date(birthDate) } : {}),
       ...(equipment !== undefined
         ? { equipment: equipment as Prisma.InputJsonValue }
         : {}),

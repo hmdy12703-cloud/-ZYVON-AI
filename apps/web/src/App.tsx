@@ -28,6 +28,8 @@ type Exercise = {
   equipment: unknown;
 };
 type Workout = { id: string; startedAt: string; completedAt: string | null; status: string; _count?: { sets: number } };
+type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; completed: boolean };
+type WorkoutDetail = { id: string; status: string; sets: WorkoutSet[] };
 
 const emptyProfile: Profile = {
   displayName: '',
@@ -86,7 +88,21 @@ export default function App() {
         api('/workouts?limit=10'),
       ]);
       setExercises(catalog.data || []);
-      setWorkouts(history.data || []);
+      const workoutItems: Workout[] = history.data || [];
+      setWorkouts(workoutItems);
+      const inProgress = workoutItems.find((item) => item.status === 'IN_PROGRESS');
+      if (inProgress) {
+        const detail: WorkoutDetail = await api(`/workouts/${inProgress.id}`);
+        setActiveWorkout(detail.id);
+        const counts = detail.sets.reduce<Record<string, number>>((result, item) => {
+          result[item.exerciseId] = Math.max(result[item.exerciseId] || 0, item.setNumber);
+          return result;
+        }, {});
+        setSetCounts(counts);
+      } else {
+        setActiveWorkout(null);
+        setSetCounts({});
+      }
       try {
         const saved = await api('/users/me/profile');
         setProfile({
@@ -117,6 +133,7 @@ export default function App() {
     setUser(null);
     setProfile(emptyProfile);
     setActiveWorkout(null);
+    setSetCounts({});
   }
 
   async function authenticate(event: FormEvent<HTMLFormElement>) {
@@ -207,6 +224,7 @@ export default function App() {
     try {
       await api(`/workouts/${activeWorkout}/complete`, { method: 'PATCH', body: JSON.stringify({}) });
       setActiveWorkout(null);
+      setSetCounts({});
       setMessage('تم إنهاء جلسة التدريب وحفظها في السجل.');
       await loadDashboard();
     } catch (err) {

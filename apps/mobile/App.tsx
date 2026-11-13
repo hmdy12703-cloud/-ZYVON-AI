@@ -48,6 +48,8 @@ export default function App() {
   const [selectedExercise, setSelectedExercise] = useState('');
   const [reps, setReps] = useState('10');
   const [loadKg, setLoadKg] = useState('');
+  const [sessionEffort, setSessionEffort] = useState('5');
+  const [sessionFeedback, setSessionFeedback] = useState('');
   const [nutrition, setNutrition] = useState<NutritionLog[]>([]);
   const [progression, setProgression] = useState<Progression | null>(null);
   const [calories, setCalories] = useState('');
@@ -208,8 +210,16 @@ export default function App() {
     setBusy(true);
     setError('');
     try {
-      await request(`/workouts/${activeWorkout}/complete`, { method: 'PATCH' });
+      await request(`/workouts/${activeWorkout}/complete`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          perceivedEffort: Number(sessionEffort),
+          ...(sessionFeedback.trim() ? { feedback: sessionFeedback.trim() } : {}),
+        }),
+      });
       setActiveWorkout('');
+      setSessionEffort('5');
+      setSessionFeedback('');
       await loadDashboard();
       setScreen('home');
     } catch (err) {
@@ -353,7 +363,10 @@ export default function App() {
                 {activeSets.length === 0 ? <Text style={styles.muted}>لم تُسجل مجموعات بعد.</Text> : activeSets.map((item) => <View key={item.id} style={styles.exercise}><Text style={styles.exerciseName}>{item.exercise?.nameAr || item.exercise?.nameEn || 'تمرين'} · المجموعة {item.setNumber}</Text><Text style={styles.muted}>{item.reps ?? '—'} تكرار · {item.loadKg ?? '—'} كجم</Text></View>)}
                 <View style={styles.row}><TextInput style={styles.inputHalf} value={reps} onChangeText={setReps} keyboardType="number-pad" placeholder="التكرارات" placeholderTextColor="#8293aa" /><TextInput style={styles.inputHalf} value={loadKg} onChangeText={setLoadKg} keyboardType="decimal-pad" placeholder="الوزن كجم (اختياري)" placeholderTextColor="#8293aa" /></View>
                 <Pressable style={styles.primary} onPress={addSet} disabled={busy || !selectedExercise}><Text style={styles.primaryText}>حفظ المجموعة</Text></Pressable>
-                <Pressable style={styles.finish} onPress={finishWorkout} disabled={busy}><Text style={styles.primaryText}>إنهاء الجلسة</Text></Pressable>
+                <Text style={styles.subtitle}>تقييم المجهود بعد التمرين (1–10)</Text>
+                <TextInput style={styles.input} value={sessionEffort} onChangeText={setSessionEffort} keyboardType="number-pad" placeholder="من 1 إلى 10" placeholderTextColor="#8293aa" />
+                <TextInput style={styles.input} value={sessionFeedback} onChangeText={setSessionFeedback} multiline placeholder="هل شعرت بألم أو تنميل أو إجهاد غير معتاد؟ اكتب ملاحظاتك (اختياري)" placeholderTextColor="#8293aa" />
+                <Pressable style={styles.finish} onPress={finishWorkout} disabled={busy}><Text style={styles.primaryText}>إنهاء الجلسة وحفظ التقييم</Text></Pressable>
               </>}
               <Text style={styles.subtitle}>الجلسات السابقة</Text>
               {workouts.map((item) => <Text key={item.id} style={styles.muted}>• {new Date(item.startedAt).toLocaleDateString('ar-EG')} — {item.status === 'COMPLETED' ? 'مكتملة' : item.status === 'IN_PROGRESS' ? 'جارية' : 'متوقفة'}</Text>)}

@@ -62,7 +62,7 @@ const equipmentAliases: Record<string, string> = {
   'بار': 'barbell',
   'باربل': 'barbell',
   'kettlebells': 'kettlebell',
-  ' kettlebell': 'kettlebell',
+  'kettlebell': 'kettlebell',
   'bands': 'resistance-band',
   'resistance band': 'resistance-band',
   'resistance bands': 'resistance-band',
@@ -87,11 +87,10 @@ function stringList(value: unknown): string[] {
 }
 
 function equipmentMatches(requiredValue: unknown, availableValue: unknown): boolean {
-  const required = stringList(requiredValue);
-  if (required.length === 0 || required.includes('bodyweight')) return true;
+  const required = stringList(requiredValue).filter((item) => item !== 'bodyweight');
+  if (required.length === 0) return true;
 
   const available = new Set(stringList(availableValue));
-  if (available.has('bodyweight')) return false;
   return required.every((item) => available.has(item));
 }
 

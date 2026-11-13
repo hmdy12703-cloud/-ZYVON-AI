@@ -1,0 +1,17 @@
+{
+  "app.name": "ZYVON AI",
+  "app.tagline": "BECOME MORE.",
+  "nav.home": "Home",
+  "nav.workouts": "Workouts",
+  "nav.progress": "Progress",
+  "nav.coach": "AI Coach",
+  "nav.profile": "Profile",
+  "onboarding.title": "Let's begin your journey",
+  "onboarding.goal": "What is your primary goal?",
+  "onboarding.level": "Your training level",
+  "onboarding.days": "How many days can you train each week?",
+  "onboarding.duration": "Workout duration in minutes",
+  "common.continue": "Continue",
+  "common.save": "Save",
+  "common.cancel": "Cancel"
+}

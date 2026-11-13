@@ -30,6 +30,7 @@ type Exercise = {
 type Workout = { id: string; startedAt: string; completedAt: string | null; status: string; _count?: { sets: number } };
 type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; completed: boolean };
 type WorkoutDetail = { id: string; status: string; sets: WorkoutSet[] };
+type TrainingPlan = { id: string; title: string; goal: string; status: string; _count?: { days: number } };
 
 const emptyProfile: Profile = {
   displayName: '',
@@ -51,6 +52,7 @@ export default function App() {
   const [profile, setProfile] = useState<Profile>(emptyProfile);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [plans, setPlans] = useState<TrainingPlan[]>([]);
   const [activeWorkout, setActiveWorkout] = useState<string | null>(null);
   const [reps, setReps] = useState('10');
   const [loadKg, setLoadKg] = useState('');
@@ -82,14 +84,16 @@ export default function App() {
     setBusy(true);
     setError('');
     try {
-      const [me, catalog, history] = await Promise.all([
+      const [me, catalog, history, planList] = await Promise.all([
         api('/users/me'),
         api('/exercises?limit=12'),
         api('/workouts?limit=10'),
+        api('/plans'),
       ]);
       setExercises(catalog.data || []);
       const workoutItems: Workout[] = history.data || [];
       setWorkouts(workoutItems);
+      setPlans(Array.isArray(planList) ? planList : []);
       const inProgress = workoutItems.find((item) => item.status === 'IN_PROGRESS');
       if (inProgress) {
         const detail: WorkoutDetail = await api(`/workouts/${inProgress.id}`);
@@ -180,6 +184,34 @@ export default function App() {
       setMessage('تم حفظ بياناتك الرياضية.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر حفظ البيانات');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function generatePlan() {
+    setBusy(true);
+    setError('');
+    try {
+      await api('/plans/generate', { method: 'POST', body: JSON.stringify({}) });
+      setMessage('تم إنشاء مسودة خطتك التدريبية. راجع الأيام والتمارين قبل تفعيلها.');
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر إنشاء الخطة');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function activatePlan(planId: string) {
+    setBusy(true);
+    setError('');
+    try {
+      await api(`/plans/${planId}/activate`, { method: 'POST', body: JSON.stringify({}) });
+      setMessage('تم تفعيل الخطة التدريبية.');
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر تفعيل الخطة');
     } finally {
       setBusy(false);
     }
@@ -290,6 +322,10 @@ export default function App() {
             {exercises.map((exercise) => <article className="exercise-card" key={exercise.id}><div><h3>{exercise.nameAr}</h3><p>{exercise.nameEn}</p><small>{exercise.descriptionAr}</small><span className="level">{exercise.difficulty}</span></div>{activeWorkout && <button className="outline" disabled={busy} onClick={() => logExercise(exercise.id)}>تسجيل المجموعة {(setCounts[exercise.id] || 0) + 1}</button>}</article>)}
             {!exercises.length && <p className="muted">لا توجد تمارين منشورة بعد. ستظهر هنا عند إضافتها إلى المكتبة.</p>}
           </div>
+        </section>
+        <section className="panel">
+          <div className="section-heading"><div><p className="eyebrow">PERSONAL TRAINING</p><h2>خططي التدريبية</h2></div><button className="outline" onClick={generatePlan} disabled={busy}>إنشاء خطة</button></div>
+          {plans.length ? <div className="history-list">{plans.map((plan) => <div className="history-row" key={plan.id}><div><strong>{plan.title}</strong><p>{plan._count?.days ?? 0} أيام · {plan.goal}</p></div><div className="plan-actions"><span className={plan.status === 'ACTIVE' ? 'status done' : 'status'}>{plan.status === 'ACTIVE' ? 'نشطة' : plan.status === 'DRAFT' ? 'مسودة' : plan.status}</span>{plan.status !== 'ACTIVE' && <button className="outline" disabled={busy} onClick={() => activatePlan(plan.id)}>تفعيل</button>}</div></div>)}</div> : <p className="muted">أنشئ خطة أولية بناءً على ملفك الرياضي والتمارين المنشورة.</p>}
         </section>
         <section className="panel history-panel">
           <div className="section-heading"><div><p className="eyebrow">YOUR ACTIVITY</p><h2>سجل التدريب</h2></div><span className="pill">{workouts.length} جلسات</span></div>

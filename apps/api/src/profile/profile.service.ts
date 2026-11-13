@@ -14,7 +14,6 @@ export class ProfileService {
   }
 
   async updateForUser(userId: string, email: string, dto: UpdateProfileDto) {
-    const existing = await this.prisma.userProfile.findUnique({ where: { userId } });
     const { equipment, birthDate, ...fields } = dto;
     const data: Prisma.UserProfileUpdateInput = {
       ...fields,

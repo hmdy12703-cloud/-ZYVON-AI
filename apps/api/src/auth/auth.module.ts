@@ -5,6 +5,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { MeController } from './me.controller';
+import { ProfileController } from '../profile/profile.controller';
+import { ProfileService } from '../profile/profile.service';
 
 @Module({
   imports: [
@@ -30,7 +32,7 @@ import { MeController } from './me.controller';
       },
     }),
   ],
-  controllers: [AuthController, MeController],
-  providers: [AuthService, JwtAuthGuard],
+  controllers: [AuthController, MeController, ProfileController],
+  providers: [AuthService, JwtAuthGuard, ProfileService],
 })
 export class AuthModule {}

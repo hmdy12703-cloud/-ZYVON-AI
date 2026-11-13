@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -15,6 +15,15 @@ import { StatusBar } from 'expo-status-bar';
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000/api/v1';
 
 type CoachMessage = { role: 'user' | 'coach'; text: string };
+type Exercise = { id: string; nameAr: string; nameEn: string; descriptionAr: string; difficulty: string };
+type Workout = { id: string; status: string; startedAt: string; _count?: { sets: number } };
+type NutritionLog = { id: string; calories?: number; proteinGrams?: number; carbsGrams?: number; fatGrams?: number; loggedAt: string; notes?: string };
+type Profile = { displayName: string; heightCm: string; weightKg: string; goal: string; experienceLevel: string; trainingDaysPerWeek: string; sessionMinutes: string; equipment: string; safetyNotes: string };
+
+const emptyProfile: Profile = {
+  displayName: '', heightCm: '', weightKg: '', goal: 'GENERAL', experienceLevel: 'BEGINNER',
+  trainingDaysPerWeek: '3', sessionMinutes: '45', equipment: '', safetyNotes: '',
+};
 
 export default function App() {
   const [token, setToken] = useState('');
@@ -26,6 +35,20 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [mode, setMode] = useState('RULE_BASED');
+  const [screen, setScreen] = useState<'home' | 'profile' | 'training' | 'nutrition' | 'coach'>('home');
+  const [profile, setProfile] = useState<Profile>(emptyProfile);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [activeWorkout, setActiveWorkout] = useState('');
+  const [selectedExercise, setSelectedExercise] = useState('');
+  const [reps, setReps] = useState('10');
+  const [loadKg, setLoadKg] = useState('');
+  const [nutrition, setNutrition] = useState<NutritionLog[]>([]);
+  const [calories, setCalories] = useState('');
+  const [protein, setProtein] = useState('');
+  const [carbs, setCarbs] = useState('');
+  const [fat, setFat] = useState('');
+  const [mealNotes, setMealNotes] = useState('');
 
   async function request(path: string, init: RequestInit = {}) {
     const response = await fetch(`${API_BASE}${path}`, {
@@ -37,9 +60,45 @@ export default function App() {
       },
     });
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.message || 'Request failed');
+    if (!response.ok) throw new Error(Array.isArray(body.message) ? body.message.join('، ') : body.message || 'Request failed');
     return body;
   }
+
+  async function loadDashboard() {
+    setBusy(true);
+    setError('');
+    try {
+      const [savedProfile, exerciseResult, workoutResult, nutritionResult] = await Promise.all([
+        request('/users/me/profile').catch(() => null),
+        request('/exercises?limit=30'),
+        request('/workouts?limit=20'),
+        request('/nutrition/logs'),
+      ]);
+      if (savedProfile) setProfile({
+        ...emptyProfile,
+        ...savedProfile,
+        heightCm: savedProfile.heightCm == null ? '' : String(savedProfile.heightCm),
+        weightKg: savedProfile.weightKg == null ? '' : String(savedProfile.weightKg),
+        trainingDaysPerWeek: String(savedProfile.trainingDaysPerWeek ?? 3),
+        sessionMinutes: String(savedProfile.sessionMinutes ?? 45),
+        equipment: Array.isArray(savedProfile.equipment) ? savedProfile.equipment.join(', ') : '',
+        safetyNotes: savedProfile.safetyNotes || '',
+      });
+      setExercises(exerciseResult.data || []);
+      const sessions: Workout[] = workoutResult.data || [];
+      setWorkouts(sessions);
+      setActiveWorkout(sessions.find((item) => item.status === 'IN_PROGRESS')?.id || '');
+      setNutrition(Array.isArray(nutritionResult) ? nutritionResult : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load your dashboard');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    if (token) void loadDashboard();
+  }, [token]);
 
   async function signIn() {
     setBusy(true);
@@ -57,6 +116,119 @@ export default function App() {
     }
   }
 
+  async function saveProfile() {
+    setBusy(true);
+    setError('');
+    try {
+      const payload = {
+        displayName: profile.displayName.trim() || 'ZYVON Athlete',
+        heightCm: profile.heightCm ? Number(profile.heightCm) : null,
+        weightKg: profile.weightKg ? Number(profile.weightKg) : null,
+        goal: profile.goal,
+        experienceLevel: profile.experienceLevel,
+        trainingDaysPerWeek: Number(profile.trainingDaysPerWeek),
+        sessionMinutes: Number(profile.sessionMinutes),
+        equipment: profile.equipment.split(',').map((item) => item.trim()).filter(Boolean),
+        safetyNotes: profile.safetyNotes.trim() || null,
+        preferredLanguage: 'ar',
+      };
+      await request('/users/me/profile', { method: 'PATCH', body: JSON.stringify(payload) });
+      setProfile((current) => ({ ...current, displayName: payload.displayName }));
+      setError('');
+      setScreen('home');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to save profile');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function startWorkout() {
+    setBusy(true);
+    setError('');
+    try {
+      const result = await request('/workouts', { method: 'POST', body: JSON.stringify({}) });
+      setActiveWorkout(result.id);
+      setScreen('training');
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to start workout');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function addSet() {
+    if (!activeWorkout || !selectedExercise) {
+      setError('ابدأ جلسة واختر تمرينًا أولًا.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      const detail = await request(`/workouts/${activeWorkout}`);
+      const previous = (detail.sets || []).filter((item: { exerciseId: string }) => item.exerciseId === selectedExercise).length;
+      await request(`/workouts/${activeWorkout}/sets`, {
+        method: 'POST',
+        body: JSON.stringify({
+          exerciseId: selectedExercise,
+          setNumber: previous + 1,
+          reps: Number(reps),
+          ...(loadKg.trim() ? { loadKg: Number(loadKg) } : {}),
+          completed: true,
+        }),
+      });
+      setReps('10');
+      setLoadKg('');
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to save set');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function finishWorkout() {
+    if (!activeWorkout) return;
+    setBusy(true);
+    setError('');
+    try {
+      await request(`/workouts/${activeWorkout}/complete`, { method: 'PATCH' });
+      setActiveWorkout('');
+      await loadDashboard();
+      setScreen('home');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to complete workout');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveNutrition() {
+    const payload: Record<string, number | string> = {};
+    if (calories.trim()) payload.calories = Number(calories);
+    if (protein.trim()) payload.proteinGrams = Number(protein);
+    if (carbs.trim()) payload.carbsGrams = Number(carbs);
+    if (fat.trim()) payload.fatGrams = Number(fat);
+    if (mealNotes.trim()) payload.notes = mealNotes.trim();
+    if (!Object.keys(payload).some((key) => key !== 'notes')) {
+      setError('أدخل قيمة غذائية واحدة على الأقل.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      await request('/nutrition/logs', { method: 'POST', body: JSON.stringify(payload) });
+      setCalories(''); setProtein(''); setCarbs(''); setFat(''); setMealNotes('');
+      const result = await request('/nutrition/logs');
+      setNutrition(Array.isArray(result) ? result : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to save nutrition');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function sendQuestion() {
     const text = question.trim();
     if (!text || busy) return;
@@ -65,10 +237,7 @@ export default function App() {
     setBusy(true);
     setError('');
     try {
-      const result = await request('/coach/chat', {
-        method: 'POST',
-        body: JSON.stringify({ message: text }),
-      });
+      const result = await request('/coach/chat', { method: 'POST', body: JSON.stringify({ message: text }) });
       setMessages((current) => [...current, { role: 'coach', text: result.reply }]);
       setMode(result.mode);
     } catch (err) {
@@ -77,6 +246,27 @@ export default function App() {
       setBusy(false);
     }
   }
+
+  function updateProfile(field: keyof Profile, value: string) {
+    setProfile((current) => ({ ...current, [field]: value }));
+  }
+
+  function signOut() {
+    setToken('');
+    setMessages([]);
+    setProfile(emptyProfile);
+    setNutrition([]);
+    setWorkouts([]);
+    setActiveWorkout('');
+  }
+
+  const nav: Array<{ key: typeof screen; label: string }> = [
+    { key: 'home', label: 'الرئيسية' },
+    { key: 'profile', label: 'ملفي' },
+    { key: 'training', label: 'التمرين' },
+    { key: 'nutrition', label: 'التغذية' },
+    { key: 'coach', label: 'المدرب' },
+  ];
 
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -98,31 +288,75 @@ export default function App() {
             <Pressable onPress={() => setRegister((value) => !value)}><Text style={styles.link}>{register ? 'لديك حساب؟ تسجيل الدخول' : 'ليس لديك حساب؟ إنشاء حساب'}</Text></Pressable>
           </View>
         ) : (
-          <View style={styles.card}>
-            <View style={styles.row}>
-              <Text style={styles.title}>مدربك الذكي</Text>
-              <Text style={styles.pill}>{mode === 'AI' ? 'AI' : 'إرشادي'}</Text>
+          <>
+            <View style={styles.nav}>
+              {nav.map((item) => <Pressable key={item.key} style={[styles.navItem, screen === item.key && styles.navActive]} onPress={() => setScreen(item.key)}><Text style={styles.navText}>{item.label}</Text></Pressable>)}
             </View>
-            <Text style={styles.muted}>اسأل عن التمارين أو جدولك أو أهدافك. هذه الإرشادات ليست تشخيصًا طبيًا.</Text>
-            <View style={styles.thread}>
-              {messages.length === 0 && <Text style={styles.muted}>مثال: كيف أبدأ إحماء قبل التمرين؟</Text>}
-              {messages.map((item, index) => (
-                <View key={index} style={[styles.bubble, item.role === 'user' && styles.userBubble]}>
-                  <Text style={styles.bubbleLabel}>{item.role === 'user' ? 'أنت' : 'ZYVON AI'}</Text>
-                  <Text style={styles.bubbleText}>{item.text}</Text>
-                </View>
-              ))}
-              {busy && <ActivityIndicator color="#70d7ff" />}
-            </View>
-            <TextInput style={[styles.input, styles.question]} value={question} onChangeText={setQuestion} maxLength={1000} multiline placeholder="اكتب سؤالك..." placeholderTextColor="#8293aa" />
-            <Pressable style={styles.primary} onPress={sendQuestion} disabled={busy || !question.trim()}>
-              <Text style={styles.primaryText}>إرسال السؤال</Text>
-            </Pressable>
-            <Pressable onPress={() => { setToken(''); setMessages([]); }}><Text style={styles.link}>تسجيل الخروج</Text></Pressable>
-          </View>
+            {screen === 'home' && <View style={styles.card}>
+              <Text style={styles.title}>لوحة الأداء</Text>
+              <Text style={styles.muted}>مرحبًا بك في ZYVON AI. تابع تدريبك وتغذيتك وهدفك من مكان واحد.</Text>
+              <View style={styles.stats}>
+                <View style={styles.stat}><Text style={styles.statValue}>{workouts.length}</Text><Text style={styles.muted}>جلسات التدريب</Text></View>
+                <View style={styles.stat}><Text style={styles.statValue}>{nutrition.length}</Text><Text style={styles.muted}>سجلات التغذية</Text></View>
+                <View style={styles.stat}><Text style={styles.statValue}>{exercises.length}</Text><Text style={styles.muted}>تمارين متاحة</Text></View>
+              </View>
+              {activeWorkout ? <Text style={styles.pill}>لديك جلسة تدريب نشطة</Text> : <Pressable style={styles.primary} onPress={startWorkout} disabled={busy}><Text style={styles.primaryText}>ابدأ جلسة تدريب</Text></Pressable>}
+              <Pressable onPress={() => setScreen('profile')}><Text style={styles.link}>أكمل ملفك الرياضي</Text></Pressable>
+              <Pressable onPress={signOut}><Text style={styles.link}>تسجيل الخروج</Text></Pressable>
+            </View>}
+            {screen === 'profile' && <View style={styles.card}>
+              <Text style={styles.title}>ملفي الرياضي</Text>
+              <TextInput style={styles.input} value={profile.displayName} onChangeText={(v) => updateProfile('displayName', v)} placeholder="الاسم المعروض" placeholderTextColor="#8293aa" />
+              <View style={styles.row}><TextInput style={styles.inputHalf} value={profile.heightCm} onChangeText={(v) => updateProfile('heightCm', v)} keyboardType="decimal-pad" placeholder="الطول سم" placeholderTextColor="#8293aa" /><TextInput style={styles.inputHalf} value={profile.weightKg} onChangeText={(v) => updateProfile('weightKg', v)} keyboardType="decimal-pad" placeholder="الوزن كجم" placeholderTextColor="#8293aa" /></View>
+              <Text style={styles.muted}>الهدف</Text>
+              <View style={styles.wrap}>{[['FAT_LOSS','خسارة الدهون'],['MUSCLE_GAIN','بناء العضلات'],['STRENGTH','القوة'],['ENDURANCE','التحمل'],['MOBILITY','المرونة'],['GENERAL','لياقة عامة']].map(([value,label]) => <Pressable key={value} style={[styles.choice, profile.goal === value && styles.choiceActive]} onPress={() => updateProfile('goal', value)}><Text style={styles.choiceText}>{label}</Text></Pressable>)}</View>
+              <Text style={styles.muted}>المستوى</Text>
+              <View style={styles.wrap}>{[['BEGINNER','مبتدئ'],['INTERMEDIATE','متوسط'],['ADVANCED','متقدم']].map(([value,label]) => <Pressable key={value} style={[styles.choice, profile.experienceLevel === value && styles.choiceActive]} onPress={() => updateProfile('experienceLevel', value)}><Text style={styles.choiceText}>{label}</Text></Pressable>)}</View>
+              <TextInput style={styles.input} value={profile.trainingDaysPerWeek} onChangeText={(v) => updateProfile('trainingDaysPerWeek', v)} keyboardType="number-pad" placeholder="أيام التدريب أسبوعيًا" placeholderTextColor="#8293aa" />
+              <TextInput style={styles.input} value={profile.sessionMinutes} onChangeText={(v) => updateProfile('sessionMinutes', v)} keyboardType="number-pad" placeholder="مدة الحصة بالدقائق" placeholderTextColor="#8293aa" />
+              <TextInput style={styles.input} value={profile.equipment} onChangeText={(v) => updateProfile('equipment', v)} placeholder="المعدات، افصل بفاصلة" placeholderTextColor="#8293aa" />
+              <TextInput style={styles.input} value={profile.safetyNotes} onChangeText={(v) => updateProfile('safetyNotes', v)} placeholder="ملاحظات السلامة أو القيود" placeholderTextColor="#8293aa" multiline />
+              <Pressable style={styles.primary} onPress={saveProfile} disabled={busy}><Text style={styles.primaryText}>حفظ الملف الرياضي</Text></Pressable>
+            </View>}
+            {screen === 'training' && <View style={styles.card}>
+              <Text style={styles.title}>سجل التدريب</Text>
+              {!activeWorkout ? <Pressable style={styles.primary} onPress={startWorkout} disabled={busy}><Text style={styles.primaryText}>ابدأ جلسة جديدة</Text></Pressable> : <>
+                <Text style={styles.pill}>جلسة نشطة</Text>
+                <Text style={styles.muted}>اختر تمرينًا وسجّل المجموعة بعد إتمامها.</Text>
+                <View style={styles.exerciseList}>{exercises.map((exercise) => <Pressable key={exercise.id} style={[styles.exercise, selectedExercise === exercise.id && styles.choiceActive]} onPress={() => setSelectedExercise(exercise.id)}><Text style={styles.exerciseName}>{exercise.nameAr}</Text><Text style={styles.muted}>{exercise.nameEn}</Text></Pressable>)}</View>
+                <View style={styles.row}><TextInput style={styles.inputHalf} value={reps} onChangeText={setReps} keyboardType="number-pad" placeholder="التكرارات" placeholderTextColor="#8293aa" /><TextInput style={styles.inputHalf} value={loadKg} onChangeText={setLoadKg} keyboardType="decimal-pad" placeholder="الوزن كجم (اختياري)" placeholderTextColor="#8293aa" /></View>
+                <Pressable style={styles.primary} onPress={addSet} disabled={busy || !selectedExercise}><Text style={styles.primaryText}>حفظ المجموعة</Text></Pressable>
+                <Pressable style={styles.finish} onPress={finishWorkout} disabled={busy}><Text style={styles.primaryText}>إنهاء الجلسة</Text></Pressable>
+              </>}
+              <Text style={styles.subtitle}>الجلسات السابقة</Text>
+              {workouts.map((item) => <Text key={item.id} style={styles.muted}>• {new Date(item.startedAt).toLocaleDateString('ar-EG')} — {item.status === 'COMPLETED' ? 'مكتملة' : item.status === 'IN_PROGRESS' ? 'جارية' : 'متوقفة'}</Text>)}
+            </View>}
+            {screen === 'nutrition' && <View style={styles.card}>
+              <Text style={styles.title}>متابعة التغذية</Text>
+              <Text style={styles.muted}>أدخل القيم المتاحة من وجبتك؛ لا نخمن محتوى الطعام.</Text>
+              <TextInput style={styles.input} value={calories} onChangeText={setCalories} keyboardType="number-pad" placeholder="السعرات الحرارية" placeholderTextColor="#8293aa" />
+              <View style={styles.row}><TextInput style={styles.inputHalf} value={protein} onChangeText={setProtein} keyboardType="decimal-pad" placeholder="البروتين جم" placeholderTextColor="#8293aa" /><TextInput style={styles.inputHalf} value={carbs} onChangeText={setCarbs} keyboardType="decimal-pad" placeholder="الكربوهيدرات جم" placeholderTextColor="#8293aa" /></View>
+              <TextInput style={styles.input} value={fat} onChangeText={setFat} keyboardType="decimal-pad" placeholder="الدهون جم" placeholderTextColor="#8293aa" />
+              <TextInput style={styles.input} value={mealNotes} onChangeText={setMealNotes} placeholder="ملاحظات الوجبة" placeholderTextColor="#8293aa" />
+              <Pressable style={styles.primary} onPress={saveNutrition} disabled={busy}><Text style={styles.primaryText}>حفظ الوجبة</Text></Pressable>
+              <Text style={styles.subtitle}>السجلات الأخيرة</Text>
+              {nutrition.map((item) => <View key={item.id} style={styles.exercise}><Text style={styles.exerciseName}>{item.calories ?? '—'} سعرة · بروتين {item.proteinGrams ?? '—'} جم</Text><Text style={styles.muted}>{item.notes || new Date(item.loggedAt).toLocaleDateString('ar-EG')}</Text></View>)}
+            </View>}
+            {screen === 'coach' && <View style={styles.card}>
+              <View style={styles.row}><Text style={styles.title}>مدربك الذكي</Text><Text style={styles.pill}>{mode === 'AI' ? 'AI' : 'إرشادي'}</Text></View>
+              <Text style={styles.muted}>اسأل عن التمارين أو جدولك أو أهدافك. الإرشادات ليست تشخيصًا طبيًا.</Text>
+              <View style={styles.thread}>
+                {messages.length === 0 && <Text style={styles.muted}>مثال: كيف أبدأ إحماء قبل التمرين؟</Text>}
+                {messages.map((item, index) => <View key={index} style={[styles.bubble, item.role === 'user' && styles.userBubble]}><Text style={styles.bubbleLabel}>{item.role === 'user' ? 'أنت' : 'ZYVON AI'}</Text><Text style={styles.bubbleText}>{item.text}</Text></View>)}
+                {busy && <ActivityIndicator color="#70d7ff" />}
+              </View>
+              <TextInput style={[styles.input, styles.question]} value={question} onChangeText={setQuestion} maxLength={1000} multiline placeholder="اكتب سؤالك..." placeholderTextColor="#8293aa" />
+              <Pressable style={styles.primary} onPress={sendQuestion} disabled={busy || !question.trim()}><Text style={styles.primaryText}>إرسال السؤال</Text></Pressable>
+            </View>}
+          </>
         )}
         {!!error && <Text style={styles.error}>{String(error)}</Text>}
-        <Text style={styles.footer}>نسخة أولية · ZYVON AI</Text>
+        <Text style={styles.footer}>نسخة تطويرية · ZYVON AI · ليست بديلًا عن المختص الطبي</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -130,28 +364,45 @@ export default function App() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#071422' },
-  content: { flexGrow: 1, padding: 22, paddingTop: 64, paddingBottom: 40, justifyContent: 'center' },
-  header: { alignItems: 'center', marginBottom: 28 },
-  logo: { width: 58, height: 58, borderRadius: 18, backgroundColor: '#70d7ff', alignItems: 'center', justifyContent: 'center' },
-  logoText: { color: '#071422', fontSize: 34, fontWeight: '900' },
-  brand: { color: '#f3f7ff', fontSize: 30, fontWeight: '900', letterSpacing: 2, marginTop: 12 },
+  content: { flexGrow: 1, padding: 18, paddingTop: 48, paddingBottom: 36 },
+  header: { alignItems: 'center', marginBottom: 22 },
+  logo: { width: 54, height: 54, borderRadius: 17, backgroundColor: '#70d7ff', alignItems: 'center', justifyContent: 'center' },
+  logoText: { color: '#071422', fontSize: 32, fontWeight: '900' },
+  brand: { color: '#f3f7ff', fontSize: 28, fontWeight: '900', letterSpacing: 2, marginTop: 10 },
   accent: { color: '#70d7ff' },
-  tagline: { color: '#8293aa', fontSize: 10, letterSpacing: 2, marginTop: 5 },
-  card: { backgroundColor: '#111c2e', borderColor: '#29384e', borderWidth: 1, borderRadius: 22, padding: 20, gap: 14 },
-  title: { color: '#f3f7ff', fontSize: 21, fontWeight: '800' },
-  input: { backgroundColor: '#0c1626', color: '#f3f7ff', borderColor: '#34445c', borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 15, textAlign: 'right' },
-  primary: { backgroundColor: '#70d7ff', borderRadius: 12, padding: 15, alignItems: 'center' },
-  primaryText: { color: '#071422', fontWeight: '800', fontSize: 15 },
-  link: { color: '#70d7ff', textAlign: 'center', padding: 8 },
-  muted: { color: '#9cabc1', lineHeight: 22, textAlign: 'right' },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  pill: { color: '#70d7ff', borderColor: '#34516a', borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, overflow: 'hidden' },
-  thread: { backgroundColor: '#0b1524', borderRadius: 14, padding: 12, gap: 10, minHeight: 160 },
-  bubble: { alignSelf: 'flex-start', backgroundColor: '#14263a', borderColor: '#34516a', borderWidth: 1, borderRadius: 12, padding: 12, maxWidth: '92%' },
+  tagline: { color: '#8293aa', fontSize: 9, letterSpacing: 2, marginTop: 4 },
+  card: { backgroundColor: '#111c2e', borderColor: '#29384e', borderWidth: 1, borderRadius: 20, padding: 17, gap: 12 },
+  title: { color: '#f3f7ff', fontSize: 20, fontWeight: '800' },
+  subtitle: { color: '#70d7ff', fontSize: 15, fontWeight: '800', marginTop: 10 },
+  input: { backgroundColor: '#0c1626', color: '#f3f7ff', borderColor: '#34445c', borderWidth: 1, borderRadius: 11, padding: 13, fontSize: 14, textAlign: 'right' },
+  inputHalf: { flex: 1, minWidth: 0, backgroundColor: '#0c1626', color: '#f3f7ff', borderColor: '#34445c', borderWidth: 1, borderRadius: 11, padding: 13, fontSize: 14, textAlign: 'right' },
+  primary: { backgroundColor: '#70d7ff', borderRadius: 11, padding: 14, alignItems: 'center' },
+  primaryText: { color: '#071422', fontWeight: '800', fontSize: 14 },
+  finish: { backgroundColor: '#b64a58', borderRadius: 11, padding: 14, alignItems: 'center' },
+  link: { color: '#70d7ff', textAlign: 'center', padding: 7 },
+  muted: { color: '#9cabc1', lineHeight: 21, textAlign: 'right', fontSize: 12 },
+  row: { flexDirection: 'row', gap: 9 },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  choice: { borderColor: '#34445c', borderWidth: 1, borderRadius: 20, paddingHorizontal: 11, paddingVertical: 8 },
+  choiceActive: { borderColor: '#70d7ff', backgroundColor: '#12354a' },
+  choiceText: { color: '#dce8f7', fontSize: 11 },
+  nav: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 7, marginBottom: 14 },
+  navItem: { borderColor: '#34445c', borderWidth: 1, borderRadius: 18, paddingHorizontal: 11, paddingVertical: 8 },
+  navActive: { backgroundColor: '#12354a', borderColor: '#70d7ff' },
+  navText: { color: '#e1efff', fontSize: 11, fontWeight: '700' },
+  stats: { flexDirection: 'row', gap: 8 },
+  stat: { flex: 1, backgroundColor: '#0c1626', borderRadius: 12, padding: 11, alignItems: 'center' },
+  statValue: { color: '#70d7ff', fontSize: 22, fontWeight: '900' },
+  pill: { color: '#70d7ff', borderColor: '#34516a', borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6, overflow: 'hidden', alignSelf: 'flex-start', fontSize: 11 },
+  exerciseList: { gap: 7, maxHeight: 260 },
+  exercise: { backgroundColor: '#0c1626', borderColor: '#29384e', borderWidth: 1, borderRadius: 11, padding: 11, gap: 4 },
+  exerciseName: { color: '#f3f7ff', fontSize: 13, fontWeight: '800', textAlign: 'right' },
+  thread: { backgroundColor: '#0b1524', borderRadius: 13, padding: 11, gap: 9, minHeight: 150 },
+  bubble: { alignSelf: 'flex-start', backgroundColor: '#14263a', borderColor: '#34516a', borderWidth: 1, borderRadius: 11, padding: 11, maxWidth: '92%' },
   userBubble: { alignSelf: 'flex-end', backgroundColor: '#12354a' },
-  bubbleLabel: { color: '#70d7ff', fontSize: 11, fontWeight: '800' },
-  bubbleText: { color: '#f3f7ff', lineHeight: 21, marginTop: 4, textAlign: 'right' },
-  question: { minHeight: 64, textAlignVertical: 'top' },
-  error: { color: '#ffc1c7', backgroundColor: '#49232b', padding: 12, borderRadius: 10, marginTop: 16 },
-  footer: { color: '#65758d', textAlign: 'center', marginTop: 28, fontSize: 11 },
+  bubbleLabel: { color: '#70d7ff', fontSize: 10, fontWeight: '800' },
+  bubbleText: { color: '#f3f7ff', lineHeight: 20, marginTop: 4, textAlign: 'right', fontSize: 13 },
+  question: { minHeight: 60, textAlignVertical: 'top' },
+  error: { color: '#ffc1c7', backgroundColor: '#49232b', padding: 12, borderRadius: 10, marginTop: 14 },
+  footer: { color: '#65758d', textAlign: 'center', marginTop: 22, fontSize: 10 },
 });

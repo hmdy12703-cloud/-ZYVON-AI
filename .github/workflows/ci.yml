@@ -13,6 +13,20 @@ on:
 jobs:
   api-build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: zyvon
+          POSTGRES_PASSWORD: zyvon_ci_password
+          POSTGRES_DB: zyvon_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U zyvon -d zyvon_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       DATABASE_URL: postgresql://zyvon:zyvon_ci_password@localhost:5432/zyvon_ci
     steps:
@@ -29,10 +43,14 @@ jobs:
         run: pnpm --filter @zyvon/database db:validate
       - name: Generate Prisma client
         run: pnpm --filter @zyvon/database db:generate
+      - name: Sync schema to PostgreSQL
+        run: pnpm --filter @zyvon/database db:push
       - name: Build API
         run: pnpm --filter @zyvon/api build
       - name: Run API validation tests
         run: pnpm --filter @zyvon/api test
+      - name: Run PostgreSQL integration tests
+        run: pnpm --filter @zyvon/api test:integration
       - name: Build web app
         run: pnpm --filter @zyvon/web build
       - name: Typecheck mobile app

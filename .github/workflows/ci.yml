@@ -59,3 +59,8 @@ jobs:
         run: pnpm --filter @zyvon/mobile exec expo export --platform android
       - name: Export iOS app bundle
         run: pnpm --filter @zyvon/mobile exec expo export --platform ios
+
+      - name: Build API Docker image
+        run: docker build -f apps/api/Dockerfile -t zyvon-api:ci .
+      - name: Build web Docker image
+        run: docker build -f apps/web/Dockerfile -t zyvon-web:ci .

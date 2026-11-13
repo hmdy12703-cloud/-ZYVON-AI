@@ -5,6 +5,7 @@ import { HealthController } from './health.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { ExercisesModule } from './exercises/exercises.module';
 import { WorkoutsModule } from './workouts/workouts.module';
+import { PlansModule } from './plans/plans.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { WorkoutsModule } from './workouts/workouts.module';
     AuthModule,
     ExercisesModule,
     WorkoutsModule,
+    PlansModule,
   ],
   controllers: [HealthController],
 })

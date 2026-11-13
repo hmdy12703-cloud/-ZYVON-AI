@@ -52,17 +52,19 @@
 - [x] Display safe progression recommendations in web and mobile dashboards.
 - [x] Add admin feedback metrics and a latest-feedback review list.
 - [x] Capture post-workout perceived effort (1–10) and optional pain/symptom feedback from mobile and persist it when completing a workout.
+- [x] Add per-IP login and registration throttling with HTTP 429 responses and focused middleware tests (single API process only; shared-store deployment remains pending).
+- [x] Verify API/web Docker image builds, PostgreSQL integration tests, and Android/iOS Expo exports in CI run 43471591707.
 - [x] Add mobile plan list, profile-based plan generation, plan detail review, and activation flow.
 - [x] Add user-scoped workout progress summary for the latest eight completed sessions and display it on mobile.
-- [ ] Verify CI for the latest plan-generator and mobile-client commits.
-- [ ] Add database-backed integration tests using a disposable PostgreSQL service.
+- [x] Verify CI for the latest plan-generator and mobile-client commits.
+- [x] Add database-backed integration tests using a disposable PostgreSQL service.
 
 ## Next build tasks
 1. Add full completed-workout detail/history views and link plan exercises to workout starts.
 2. Add admin audit events, user-support workflows, and exercise media management.
-4. Add database-backed integration tests using a disposable PostgreSQL service.
+4. Expand database integration coverage for authorization boundaries, ownership checks, and migrations.
 5. Expand AI Coach with conversation persistence, structured exercise recommendations, voice input/output, rate limits, and additional safety regression tests. Configure `OPENAI_API_KEY` only in the API deployment secret store to enable provider-backed responses.
-6. Replace browser `sessionStorage` tokens with secure HttpOnly cookie sessions, add rate limiting and CSRF protections, then deploy a staging environment.
+6. Replace browser `sessionStorage` tokens with secure HttpOnly cookie sessions, add CSRF protections, and move authentication throttling to a shared store before multi-instance deployment.
 7. Establish reviewed Prisma migrations, HTTPS/reverse proxy, secrets management, database backups/restore drills, monitoring, and a production deployment.
 8. Complete device QA, signed Android/iOS builds, privacy policy/terms review, accessibility, and store submission.
 9. Add nutrition targets and progress charts only after collecting validated user-entered data.

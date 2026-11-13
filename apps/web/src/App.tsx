@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api/v1';
 
@@ -81,7 +82,6 @@ export default function App() {
         api('/exercises?limit=12'),
         api('/workouts?limit=10'),
       ]);
-      setUser(me.user);
       setExercises(catalog.data || []);
       setWorkouts(history.data || []);
       try {
@@ -95,6 +95,7 @@ export default function App() {
       } catch {
         setProfile(emptyProfile);
       }
+      setUser(me.user);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر تحميل البيانات');
       if (String(err).includes('Invalid') || String(err).includes('token')) logout();
@@ -115,7 +116,7 @@ export default function App() {
     setActiveWorkout(null);
   }
 
-  async function authenticate(event: React.FormEvent<HTMLFormElement>) {
+  async function authenticate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setError('');
@@ -134,7 +135,7 @@ export default function App() {
     }
   }
 
-  async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setError('');

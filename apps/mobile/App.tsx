@@ -17,6 +17,7 @@ const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000/
 type CoachMessage = { role: 'user' | 'coach'; text: string };
 type Exercise = { id: string; nameAr: string; nameEn: string; descriptionAr: string; difficulty: string };
 type Workout = { id: string; status: string; startedAt: string; _count?: { sets: number } };
+type WorkoutDetail = { id: string; status: string; startedAt: string; completedAt?: string | null; perceivedEffort?: number | null; feedback?: string | null; sets: WorkoutSet[] };
 type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; exercise?: { nameAr: string; nameEn: string } };
 type TrainingPlan = { id: string; title: string; goal: string; status: string; startDate?: string | null; _count?: { days: number }; days?: Array<{ id: string; dayNumber: number; title?: string | null; exercises: Array<{ id: string; sets: number; repsMin: number; repsMax: number; durationSeconds?: number | null; restSeconds: number; exercise: { id: string; nameAr: string; nameEn: string; difficulty: string } }> }> };
 type Progression = { basedOnSessions: number; recommendations: Array<{ exerciseId: string; action: string; suggestedLoadKg: number | null; reason: string }>; safetyMessage: string };
@@ -46,6 +47,7 @@ export default function App() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [activeWorkout, setActiveWorkout] = useState('');
   const [activeSets, setActiveSets] = useState<WorkoutSet[]>([]);
+  const [selectedWorkout, setSelectedWorkout] = useState<WorkoutDetail | null>(null);
   const [selectedExercise, setSelectedExercise] = useState('');
   const [reps, setReps] = useState('10');
   const [loadKg, setLoadKg] = useState('');
@@ -160,6 +162,19 @@ export default function App() {
       setScreen('home');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to save profile');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function openWorkout(workoutId: string) {
+    setBusy(true);
+    setError('');
+    try {
+      const detail = await request(`/workouts/${workoutId}`);
+      setSelectedWorkout(detail);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر تحميل تفاصيل الجلسة');
     } finally {
       setBusy(false);
     }
@@ -437,7 +452,15 @@ export default function App() {
                 <Pressable style={styles.finish} onPress={finishWorkout} disabled={busy}><Text style={styles.primaryText}>إنهاء الجلسة وحفظ التقييم</Text></Pressable>
               </>}
               <Text style={styles.subtitle}>الجلسات السابقة</Text>
-              {workouts.map((item) => <Text key={item.id} style={styles.muted}>• {new Date(item.startedAt).toLocaleDateString('ar-EG')} — {item.status === 'COMPLETED' ? 'مكتملة' : item.status === 'IN_PROGRESS' ? 'جارية' : 'متوقفة'}</Text>)}
+              {workouts.map((item) => <Pressable key={item.id} style={styles.exercise} onPress={() => openWorkout(item.id)}><Text style={styles.exerciseName}>{new Date(item.startedAt).toLocaleDateString('ar-EG')} — {item.status === 'COMPLETED' ? 'مكتملة' : item.status === 'IN_PROGRESS' ? 'جارية' : 'متوقفة'}</Text><Text style={styles.link}>عرض تفاصيل الجلسة</Text></Pressable>)}
+              {selectedWorkout && <View style={styles.exercise}>
+                <Text style={styles.subtitle}>تفاصيل الجلسة المحددة</Text>
+                <Text style={styles.muted}>بدأت: {new Date(selectedWorkout.startedAt).toLocaleString('ar-EG')}</Text>
+                {selectedWorkout.completedAt && <Text style={styles.muted}>انتهت: {new Date(selectedWorkout.completedAt).toLocaleString('ar-EG')}</Text>}
+                {selectedWorkout.perceivedEffort != null && <Text style={styles.muted}>المجهود: {selectedWorkout.perceivedEffort}/10</Text>}
+                {!!selectedWorkout.feedback && <Text style={styles.muted}>ملاحظات: {selectedWorkout.feedback}</Text>}
+                {selectedWorkout.sets.map((item) => <Text key={item.id} style={styles.muted}>{item.exercise?.nameAr || item.exercise?.nameEn || 'تمرين'} · المجموعة {item.setNumber} · {item.reps ?? '—'} تكرار · {item.loadKg ?? '—'} كجم</Text>)}
+              </View>}
             </View>}
             {screen === 'nutrition' && <View style={styles.card}>
               <Text style={styles.title}>متابعة التغذية</Text>

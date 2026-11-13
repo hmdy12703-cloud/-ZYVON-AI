@@ -13,9 +13,11 @@ test('accepts a non-empty coach question within the length limit', async () => {
 
 test('rejects empty, oversized, and unexpected coach payload fields', async () => {
   const empty = plainToInstance(CoachMessageDto, { message: ' ' });
+  const whitespace = plainToInstance(CoachMessageDto, { message: '   ' });
   const oversized = plainToInstance(CoachMessageDto, { message: 'x'.repeat(1001) });
   const unexpected = plainToInstance(CoachMessageDto, { message: 'hello', userId: 'another-user' });
   assert.ok((await validate(empty)).length > 0);
+  assert.ok((await validate(whitespace)).length > 0);
   assert.ok((await validate(oversized)).length > 0);
   assert.ok((await validate(unexpected, { whitelist: true, forbidNonWhitelisted: true })).length > 0);
 });

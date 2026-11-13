@@ -5,10 +5,10 @@
   "description": "AI-powered human performance platform",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "dev": "pnpm --parallel --filter './apps/**' dev",
-    "build": "pnpm -r build",
-    "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm -r lint",
+    "dev": "pnpm --parallel --if-present --filter './apps/**' dev",
+    "build": "pnpm -r --if-present build",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint",
     "format": "prettier --write ."
   },
   "devDependencies": {

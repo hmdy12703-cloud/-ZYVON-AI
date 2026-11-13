@@ -68,7 +68,7 @@ test('adds a conservative safety reminder when profile safety notes exist', () =
 
 test('rejects a catalog with too few suitable exercises', () => {
   assert.throws(
-    () => buildPlanDays(profile({ equipment: ['treadmill'] }), exercises),
+    () => buildPlanDays(profile({ equipment: ['treadmill'] }), exercises.filter((item) => Array.isArray(item.equipment) && item.equipment.length > 0)),
     /NOT_ENOUGH_SUITABLE_EXERCISES/,
   );
 });

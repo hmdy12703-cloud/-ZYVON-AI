@@ -397,7 +397,7 @@ export default function App() {
                 <View style={styles.stat}><Text style={styles.statValue}>{nutrition.length}</Text><Text style={styles.muted}>سجلات التغذية</Text></View>
                 <View style={styles.stat}><Text style={styles.statValue}>{exercises.length}</Text><Text style={styles.muted}>تمارين متاحة</Text></View>
               </View>
-              {activeWorkout ? <Text style={styles.pill}>لديك جلسة تدريب نشطة</Text> : <Pressable style={styles.primary} onPress={startWorkout} disabled={busy}><Text style={styles.primaryText}>ابدأ جلسة تدريب</Text></Pressable>}
+              {activeWorkout ? <Text style={styles.pill}>لديك جلسة تدريب نشطة</Text> : <Pressable style={styles.primary} onPress={() => startWorkout()} disabled={busy}><Text style={styles.primaryText}>ابدأ جلسة تدريب</Text></Pressable>}
               {workoutProgress && <View style={styles.exercise}>
                 <Text style={styles.subtitle}>تقدمك التدريبي</Text>
                 <Text style={styles.muted}>آخر {workoutProgress.totals.completedSessions} جلسات مكتملة · {workoutProgress.totals.completedSets} مجموعة مكتملة · حجم تدريبي {workoutProgress.totals.volumeKg} كجم×تكرار</Text>
@@ -455,7 +455,7 @@ export default function App() {
             </View>}
             {screen === 'training' && <View style={styles.card}>
               <Text style={styles.title}>سجل التدريب</Text>
-              {!activeWorkout ? <Pressable style={styles.primary} onPress={startWorkout} disabled={busy}><Text style={styles.primaryText}>ابدأ جلسة جديدة</Text></Pressable> : <>
+              {!activeWorkout ? <Pressable style={styles.primary} onPress={() => startWorkout()} disabled={busy}><Text style={styles.primaryText}>ابدأ جلسة جديدة</Text></Pressable> : <>
                 <Text style={styles.pill}>جلسة نشطة</Text>
                 <Text style={styles.muted}>اختر تمرينًا وسجّل المجموعة بعد إتمامها.</Text>
                 <View style={styles.exerciseList}>{exercises.map((exercise) => <Pressable key={exercise.id} style={[styles.exercise, selectedExercise === exercise.id && styles.choiceActive]} onPress={() => setSelectedExercise(exercise.id)}><Text style={styles.exerciseName}>{exercise.nameAr}</Text><Text style={styles.muted}>{exercise.nameEn}</Text></Pressable>)}</View>

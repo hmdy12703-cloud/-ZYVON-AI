@@ -39,3 +39,5 @@ jobs:
         run: pnpm --filter @zyvon/mobile typecheck
       - name: Export Android app bundle
         run: pnpm --filter @zyvon/mobile exec expo export --platform android
+      - name: Export iOS app bundle
+        run: pnpm --filter @zyvon/mobile exec expo export --platform ios

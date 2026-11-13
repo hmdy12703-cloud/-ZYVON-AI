@@ -41,22 +41,28 @@
 - [x] Arabic-first web chat panel with clear rule-based fallback labeling when no AI key is configured.
 - [x] Coach request validation tests for empty, oversized, whitespace-only, and unexpected fields.
 - [x] Authenticated nutrition log API with user-scoped reads/writes and bounded macro/calorie validation.
+- [x] Equipment alias normalization (Arabic/English) and strict all-required-equipment matching in plan generation.
+- [x] Mobile active-session restoration now reloads saved sets and uses the highest existing set number to avoid duplicate numbering.
+- [x] Mobile nutrition screen shows same-day calorie and macro totals from user-entered logs.
 - [x] Web nutrition entry form and recent-log history.
 - [ ] Verify the latest CI run after the most recent web workout-logging changes.
 - [ ] Add database-backed integration tests using a disposable PostgreSQL service.
 
 ## Next build tasks
-1. Load active workout sets from the API so set numbering survives refreshes and multiple devices.
-2. Add editable exercise selection and full workout detail/history views.
-3. Add editable training-plan details, progression logic, and plan ownership regression tests.
+1. Add plan progression recommendations based on completed sessions, with conservative increments and explicit pain/fatigue stop rules.
+2. Add admin exercise editing (not only create/publish/archive), audit events, and user-support workflows.
+3. Add mobile plan browsing/generation/activation and full completed-workout detail/history views.
+4. Add database-backed integration tests using a disposable PostgreSQL service.
 4. Expand AI Coach with conversation persistence, structured exercise recommendations, voice input/output, rate limits, and additional safety regression tests. Configure OPENAI_API_KEY only in the API deployment secret store to enable provider-backed responses.
 5. Replace browser sessionStorage tokens with secure HttpOnly cookie sessions, add rate limiting and CSRF protections, then deploy a staging environment.
 6. Expand the Expo Android/iOS client with workout tracking, profile onboarding, nutrition logs, localization, secure token storage, and device QA; the current native client is an early starter, not a store release.
 7. Establish reviewed Prisma migrations, HTTPS/reverse proxy, secrets management, database backups/restore drills, monitoring, and a production deployment.
 8. Complete device QA, signed Android/iOS builds, privacy policy/terms, accessibility, and store submission.
-7. Complete the admin exercise editor, user support workflows, audit log, and secure role provisioning.
-8. Add PostgreSQL-backed integration tests and automated database migration checks.
-9. Add nutrition summaries, daily targets, and progress charts only after collecting validated user-entered data.
+5. Expand AI Coach with conversation persistence, structured exercise recommendations, voice input/output, rate limits, and additional safety regression tests. Configure OPENAI_API_KEY only in the API deployment secret store to enable provider-backed responses.
+6. Replace browser sessionStorage tokens with secure HttpOnly cookie sessions, add rate limiting and CSRF protections, then deploy a staging environment.
+7. Establish reviewed Prisma migrations, HTTPS/reverse proxy, secrets management, database backups/restore drills, monitoring, and a production deployment.
+8. Complete device QA, signed Android/iOS builds, privacy policy/terms review, accessibility, and store submission.
+9. Add nutrition targets and progress charts only after collecting validated user-entered data.
 
 ## Status policy
 A task is complete only after its files are committed and the relevant checks have passed. A design document is not proof of a working feature.

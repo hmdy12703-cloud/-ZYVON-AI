@@ -260,6 +260,41 @@ export default function App() {
     }
   }
 
+  async function createAdminExercise(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const value = (key: string) => String(form.get(key) || '').trim();
+    const payload = {
+      slug: value('slug'),
+      nameAr: value('nameAr'),
+      nameEn: value('nameEn'),
+      descriptionAr: value('descriptionAr'),
+      descriptionEn: value('descriptionEn'),
+      instructionsAr: value('instructionsAr'),
+      instructionsEn: value('instructionsEn'),
+      primaryMuscles: value('primaryMuscles').split(',').map((item) => item.trim()).filter(Boolean),
+      equipment: value('equipment').split(',').map((item) => item.trim()).filter(Boolean),
+      difficulty: value('difficulty'),
+      safetyNotesAr: value('safetyNotesAr'),
+      safetyNotesEn: value('safetyNotesEn'),
+    };
+    setBusy(true);
+    setError('');
+    try {
+      await api('/admin/exercises', { method: 'POST', body: JSON.stringify(payload) });
+      formElement.reset();
+      const [overview, items] = await Promise.all([api('/admin/overview'), api('/admin/exercises')]);
+      setAdminOverview(overview);
+      setAdminExercises(Array.isArray(items) ? items : []);
+      setMessage('تمت إضافة التمرين كمسودة. راجعه ثم انشره.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر إضافة التمرين');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function changeExerciseStatus(exerciseId: string, status: string) {
     setBusy(true);
     setError('');
@@ -459,6 +494,22 @@ export default function App() {
             <div><strong>{adminOverview.workouts}</strong><small>جلسات التدريب</small></div>
             <div><strong>{adminOverview.nutritionLogs}</strong><small>سجلات التغذية</small></div>
           </div>}
+          <h3 className="admin-subtitle">إضافة تمرين جديد</h3>
+          <form className="admin-exercise-form" onSubmit={createAdminExercise}>
+            <label>المعرّف بالإنجليزية<input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxLength={80} placeholder="bodyweight-squat" /></label>
+            <label>اسم التمرين بالعربية<input name="nameAr" required minLength={2} maxLength={100} /></label>
+            <label>اسم التمرين بالإنجليزية<input name="nameEn" required minLength={2} maxLength={100} /></label>
+            <label>الوصف بالعربية<input name="descriptionAr" required minLength={2} maxLength={1000} /></label>
+            <label>الوصف بالإنجليزية<input name="descriptionEn" required minLength={2} maxLength={1000} /></label>
+            <label>تعليمات الأداء بالعربية<input name="instructionsAr" required minLength={2} maxLength={3000} /></label>
+            <label>تعليمات الأداء بالإنجليزية<input name="instructionsEn" required minLength={2} maxLength={3000} /></label>
+            <label>العضلات المستهدفة (افصل بفاصلة)<input name="primaryMuscles" placeholder="Quadriceps, Glutes" /></label>
+            <label>المعدات المطلوبة (افصل بفاصلة)<input name="equipment" placeholder="Bodyweight أو Dumbbell" /></label>
+            <label>المستوى<select name="difficulty" defaultValue="BEGINNER"><option value="BEGINNER">مبتدئ</option><option value="INTERMEDIATE">متوسط</option><option value="ADVANCED">متقدم</option></select></label>
+            <label>ملاحظات السلامة بالعربية<input name="safetyNotesAr" required minLength={2} maxLength={1000} /></label>
+            <label>ملاحظات السلامة بالإنجليزية<input name="safetyNotesEn" required minLength={2} maxLength={1000} /></label>
+            <button className="primary" type="submit" disabled={busy}>إضافة كمسودة</button>
+          </form>
           <h3 className="admin-subtitle">إدارة مكتبة التمارين</h3>
           <div className="history-list">{adminExercises.map((exercise) => <div className="history-row" key={exercise.id}>
             <div><strong>{exercise.nameAr}</strong><p>{exercise.nameEn} · {exercise.difficulty} · {exercise.slug}</p></div>

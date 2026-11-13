@@ -29,6 +29,11 @@ export class AdminController {
     return this.admin.createExercise(dto);
   }
 
+  @Patch('exercises/:id')
+  updateExercise(@Param('id') id: string, @Body() dto: CreateExerciseDto) {
+    return this.admin.updateExercise(id, dto);
+  }
+
   @Patch('exercises/:id/status')
   updateExerciseStatus(@Param('id') id: string, @Body() dto: UpdateExerciseStatusDto) {
     return this.admin.updateExerciseStatus(id, dto);

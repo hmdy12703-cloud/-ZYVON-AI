@@ -283,3 +283,8 @@ The script only updates the matching existing account and does not expose an HTT
 5. Register your own account and promote it using the administrator bootstrap command above.
 
 The API container applies the current Prisma schema with `db:push` on startup because this repository currently uses schema synchronization rather than a committed migration history. Before a production launch, establish and review a migration baseline, configure HTTPS and domain-level reverse proxying, restrict server/network access, set backup and restore procedures for PostgreSQL, and test a full restore. Configure `OPENAI_API_KEY` only on the server if you want provider-backed AI replies; without it, the coach uses its clearly labeled rule-based fallback. The Docker stack is a deployment foundation, not a substitute for production security review or store signing.
+
+
+## Production database safety
+
+See [Production Readiness](docs/PRODUCTION_READINESS.md) before deploying. Docker no longer runs Prisma schema synchronization automatically. `ALLOW_PRISMA_DB_PUSH=true` is for disposable development databases only; do not enable it in production. A reviewed, committed Prisma migration history is required before production deployment.

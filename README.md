@@ -174,6 +174,12 @@ The repository now includes a NestJS API under `apps/api`:
 
 - `GET /api/v1/exercises` — public, paginated catalog of published exercises; supports `page`, `limit`, `q`, and `difficulty` filters.
 - `GET /api/v1/exercises/:slug` — public details for one published exercise, including bilingual instructions, safety notes, and media.
+
+- `POST /api/v1/workouts` — start a workout session for the signed-in user; an optional plan must belong to that user.
+- `GET /api/v1/workouts` — list the signed-in user's workout history with pagination.
+- `GET /api/v1/workouts/:id` — retrieve one of the signed-in user's sessions and its logged sets.
+- `POST /api/v1/workouts/:id/sets` — log a set against a published exercise in an active session.
+- `PATCH /api/v1/workouts/:id/complete` — complete an active session.
 - `PATCH /api/v1/users/me/profile` — create or update onboarding data (display name, birth date, height, weight, language, goal, experience, weekly training days, session duration, equipment, and optional safety notes). Only the authenticated user's own profile can be changed; unknown fields are rejected.
 
 ### Run locally
@@ -200,3 +206,11 @@ Build verification is pending until the latest GitHub Actions run completes. No 
 ### Exercise catalog API
 
 Only exercises with `PUBLISHED` status are visible through the public catalog. The list endpoint returns a stable page/limit pagination envelope and supports text search across Arabic/English names and slug, plus experience-level filtering. Draft and archived exercises are never exposed. The detail endpoint returns bilingual instructions, safety notes, and ordered media for the selected published exercise.
+
+### Workout tracking API
+
+Workout endpoints require a valid bearer token and scope every read/write by the authenticated user ID. Sessions can only be started against plans owned by the same user. Set logging requires a published exercise and an active session; each set must include repetitions or a duration. Completion is an atomic state transition from `IN_PROGRESS` to `COMPLETED`.
+
+### Automated tests
+
+The API CI job validates the Prisma schema, generates Prisma Client, builds the NestJS API, and runs DTO validation regression tests using Node's test runner through `tsx`.

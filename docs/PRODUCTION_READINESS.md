@@ -33,3 +33,14 @@ With the default setting, a brand-new database has no application tables until a
 The current GitHub Actions workflow validates Prisma schema, generates Prisma Client, builds the API and web app, runs API validation and PostgreSQL integration tests, typechecks the mobile app, exports Android/iOS JavaScript bundles, and builds API/web Docker images.
 
 A successful CI run does not prove a production deployment, signed store binaries, live provider credentials, real-device behavior, or production database migration readiness.
+
+## Authentication request throttling
+
+The API applies conservative per-IP limits to public authentication routes:
+
+- Login: 10 requests per 15 minutes per IP.
+- Registration: 5 requests per hour per IP.
+- Excess requests receive HTTP 429 and a `Retry-After` header.
+- Expired buckets are reset and the in-memory map is bounded.
+
+This implementation is process-local. It is a useful baseline for a single API instance, but it is not a distributed limiter: multiple API replicas each maintain separate counters, and restarts clear the counters. Before horizontally scaling or relying on it as a production abuse-control boundary, move the counters to a shared atomic store such as Redis and configure trusted proxy IP ranges correctly. Do not blindly trust arbitrary `X-Forwarded-For` headers.

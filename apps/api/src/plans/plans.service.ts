@@ -64,7 +64,7 @@ export class PlansService {
         days: {
           create: Array.from({ length: dayCount }, (_, dayIndex) => {
             const chosen = Array.from({ length: Math.min(5, exercises.length) }, (_, index) =>
-              exercises[(dayIndex * 3 + index) % exercises.length],
+              exercises[(dayIndex * 3 + index) % exercises.length]!,
             );
             return {
               dayNumber: dayIndex + 1,

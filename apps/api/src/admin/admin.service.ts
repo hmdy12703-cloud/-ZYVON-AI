@@ -9,7 +9,7 @@ export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
   async overview() {
-    const [users, exercises, publishedExercises, draftExercises, plans, workouts, nutritionLogs] = await Promise.all([
+    const [users, exercises, publishedExercises, draftExercises, plans, workouts, nutritionLogs, feedbackEntries] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.exercise.count(),
       this.prisma.exercise.count({ where: { status: ExerciseStatus.PUBLISHED } }),
@@ -17,8 +17,20 @@ export class AdminService {
       this.prisma.trainingPlan.count(),
       this.prisma.workoutSession.count(),
       this.prisma.nutritionLog.count(),
+      this.prisma.userFeedback.count(),
     ]);
-    return { users, exercises, publishedExercises, draftExercises, plans, workouts, nutritionLogs };
+    return { users, exercises, publishedExercises, draftExercises, plans, workouts, nutritionLogs, feedbackEntries };
+  }
+
+  listFeedback() {
+    return this.prisma.userFeedback.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: {
+        id: true, category: true, rating: true, comment: true, createdAt: true,
+        user: { select: { email: true } },
+      },
+    });
   }
 
   listExercises() {

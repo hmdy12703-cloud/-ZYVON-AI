@@ -180,6 +180,10 @@ The repository includes a NestJS API under `apps/api`:
 - `GET /api/v1/workouts/:id` — retrieve one of the signed-in user's sessions and its logged sets.
 - `POST /api/v1/workouts/:id/sets` — log a set against a published exercise in an active session.
 - `PATCH /api/v1/workouts/:id/complete` — complete an active session.
+- `GET /api/v1/admin/overview` — administrator-only aggregate dashboard metrics.
+- `GET /api/v1/admin/exercises` — administrator-only exercise catalog including drafts.
+- `POST /api/v1/admin/exercises` — create a bilingual exercise draft.
+- `PATCH /api/v1/admin/exercises/:id/status` — publish, draft, or archive an exercise.
 - `GET /api/v1/nutrition/logs` — retrieve the signed-in user's 30 most recent nutrition logs.
 - `POST /api/v1/nutrition/logs` — add a nutrition log with validated calories and macros.
 - `POST /api/v1/coach/chat` — authenticated fitness-coach chat. The API sends profile context to a server-side OpenAI-compatible provider when configured; otherwise it returns an explicitly labeled rule-based starter response. Provider keys must remain in API environment secrets.
@@ -242,3 +246,8 @@ An Expo React Native app is now present at `apps/mobile` for Android and iOS. Th
 Copy `apps/mobile/.env.example` to `apps/mobile/.env` and set `EXPO_PUBLIC_API_BASE_URL` to a reachable API URL. For a physical phone, use the server's LAN address or deployed HTTPS URL; do not use `localhost` on the phone. Android emulator commonly reaches the host at `10.0.2.2`.
 
 Start with `pnpm --filter @zyvon/mobile dev`. This is a development starter, not a signed store-ready APK/IPA. Device QA, secure token persistence, full native workout/profile/nutrition screens, app icons/splash assets, and store signing remain release tasks.
+
+
+### Administrator tools
+
+Accounts with the `ADMIN` role can open the administrator panel in the web dashboard. It displays aggregate platform counts and lets an administrator publish or archive exercise records. The API applies both JWT authentication and an administrator-role guard. Exercise creation is available through the protected API; a full visual exercise editor, user support tools, audit history, and role provisioning workflow remain future work.

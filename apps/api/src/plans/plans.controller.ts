@@ -21,6 +21,11 @@ export class PlansController {
     return this.plans.generate(request.user.sub);
   }
 
+  @Get('progression/recommendations')
+  progressionRecommendations(@Req() request: AuthRequest) {
+    return this.plans.progressionRecommendations(request.user.sub);
+  }
+
   @Get(':id')
   get(@Req() request: AuthRequest, @Param('id') id: string) {
     return this.plans.get(request.user.sub, id);

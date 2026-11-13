@@ -47,6 +47,7 @@
 - [x] Mobile nutrition screen shows same-day calorie and macro totals from user-entered logs.
 - [x] Mobile training screen restores active-session sets and displays saved set details after reload.
 - [x] Web nutrition entry form and recent-log history.
+- [x] Add authenticated user feedback endpoint and mobile app rating/comment screen.
 - [ ] Verify CI for the latest plan-generator and mobile-client commits.
 - [ ] Add database-backed integration tests using a disposable PostgreSQL service.
 

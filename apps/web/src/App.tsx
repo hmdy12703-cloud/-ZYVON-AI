@@ -29,7 +29,7 @@ type Exercise = {
 };
 type Workout = { id: string; startedAt: string; completedAt: string | null; status: string; _count?: { sets: number } };
 type WorkoutSet = { id: string; exerciseId: string; setNumber: number; reps: number | null; loadKg: number | null; durationSeconds: number | null; completed: boolean; exercise?: { nameAr: string; nameEn: string } };
-type WorkoutDetail = { id: string; status: string; sets: WorkoutSet[] };
+type WorkoutDetail = { id: string; status: string; startedAt: string; completedAt: string | null; perceivedEffort: number | null; feedback: string | null; sets: WorkoutSet[] };
 type TrainingPlan = { id: string; title: string; goal: string; status: string; _count?: { days: number } };
 type ProgressionItem = { exerciseId: string; action: 'ADD_ONE_REP' | 'SMALL_LOAD_INCREASE' | 'HOLD'; suggestedLoadKg: number | null; reason: string };
 type ProgressionResult = { basedOnSessions: number; recommendations: ProgressionItem[]; safetyMessage: string };
@@ -67,6 +67,7 @@ export default function App() {
   const [loadKg, setLoadKg] = useState('');
   const [setCounts, setSetCounts] = useState<Record<string, number>>({});
   const [workoutSets, setWorkoutSets] = useState<WorkoutSet[]>([]);
+  const [selectedWorkout, setSelectedWorkout] = useState<WorkoutDetail | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -168,6 +169,19 @@ export default function App() {
     if (token) void loadDashboard();
   }, [token, loadDashboard]);
 
+  async function openWorkout(workoutId: string) {
+    setBusy(true);
+    setError('');
+    try {
+      const detail: WorkoutDetail = await api(`/workouts/${workoutId}`);
+      setSelectedWorkout(detail);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر تحميل تفاصيل الجلسة');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function logout() {
     sessionStorage.removeItem('zyvon_token');
     setToken('');
@@ -176,6 +190,7 @@ export default function App() {
     setActiveWorkout(null);
     setSetCounts({});
     setWorkoutSets([]);
+    setSelectedWorkout(null);
   }
 
   async function authenticate(event: FormEvent<HTMLFormElement>) {
@@ -570,7 +585,15 @@ export default function App() {
         </section>
         <section className="panel history-panel">
           <div className="section-heading"><div><p className="eyebrow">YOUR ACTIVITY</p><h2>سجل التدريب</h2></div><span className="pill">{workouts.length} جلسات</span></div>
-          {workouts.length ? <div className="history-list">{workouts.map((workout) => <div className="history-row" key={workout.id}><div><strong>{new Date(workout.startedAt).toLocaleDateString('ar-EG')}</strong><p>{workout._count?.sets ?? 0} مجموعات مسجلة</p></div><span className={workout.status === 'COMPLETED' ? 'status done' : 'status'}>{workout.status === 'COMPLETED' ? 'مكتملة' : 'قيد التنفيذ'}</span></div>)}</div> : <p className="muted">لم تسجل جلسات بعد. ابدأ أول جلسة عندما تكون مستعدًا.</p>}
+          {workouts.length ? <div className="history-list">{workouts.map((workout) => <div className="history-row" key={workout.id}><div><strong>{new Date(workout.startedAt).toLocaleDateString('ar-EG')}</strong><p>{workout._count?.sets ?? 0} مجموعات مسجلة</p></div><div className="plan-actions"><span className={workout.status === 'COMPLETED' ? 'status done' : 'status'}>{workout.status === 'COMPLETED' ? 'مكتملة' : workout.status === 'IN_PROGRESS' ? 'قيد التنفيذ' : 'متوقفة'}</span><button className="outline" onClick={() => openWorkout(workout.id)} disabled={busy}>عرض التفاصيل</button></div></div>)}</div> : <p className="muted">لم تسجل جلسات بعد. ابدأ أول جلسة عندما تكون مستعدًا.</p>}
+          {selectedWorkout && <section className="panel plan-detail-panel">
+            <div className="section-heading"><div><p className="eyebrow">WORKOUT DETAILS</p><h3>تفاصيل الجلسة</h3></div><button className="ghost" onClick={() => setSelectedWorkout(null)}>إغلاق</button></div>
+            <p className="muted">بدأت: {new Date(selectedWorkout.startedAt).toLocaleString('ar-EG')}</p>
+            {selectedWorkout.completedAt && <p className="muted">انتهت: {new Date(selectedWorkout.completedAt).toLocaleString('ar-EG')}</p>}
+            {selectedWorkout.perceivedEffort !== null && <p className="muted">تقييم المجهود: {selectedWorkout.perceivedEffort}/10</p>}
+            {selectedWorkout.feedback && <p className="muted">ملاحظات بعد التمرين: {selectedWorkout.feedback}</p>}
+            {selectedWorkout.sets.length ? <div className="history-list">{selectedWorkout.sets.map((set) => <div className="history-row" key={set.id}><div><strong>{set.exercise?.nameAr || 'تمرين'}</strong><p>{set.exercise?.nameEn || ''} · المجموعة {set.setNumber}</p></div><span>{set.reps !== null ? `${set.reps} تكرار` : `${set.durationSeconds ?? '—'} ثانية`}</span><span>{set.loadKg !== null ? `${set.loadKg} كجم` : 'بدون وزن'}</span><span className={set.completed ? 'status done' : 'status'}>{set.completed ? 'مكتملة' : 'غير مكتملة'}</span></div>)}</div> : <p className="muted">لا توجد مجموعات مسجلة في هذه الجلسة.</p>}
+          </section>}
         </section>
       </div>
       <footer>ZYVON AI · إصدار تأسيسي · البيانات الرياضية ملك لحسابك</footer>

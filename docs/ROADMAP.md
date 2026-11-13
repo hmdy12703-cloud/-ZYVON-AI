@@ -32,6 +32,7 @@
 - [x] Web client restores an active workout from the API and displays its saved sets after reload.
 - [x] Web client displays training-plan day and exercise details.
 - [x] Expo React Native starter for Android/iOS with registration, login, and coach chat.
+- [x] Role-protected administrator metrics and exercise publishing/archive workflow.
 - [x] CI typechecks the mobile client and exports Android/iOS JavaScript bundles.
 - [x] Authenticated server-side AI coach endpoint with provider configuration kept on the API.
 - [x] Arabic-first web chat panel with clear rule-based fallback labeling when no AI key is configured.
@@ -48,8 +49,9 @@
 4. Expand AI Coach with conversation persistence, structured exercise recommendations, voice input/output, rate limits, and additional safety regression tests. Configure OPENAI_API_KEY only in the API deployment secret store to enable provider-backed responses.
 5. Replace browser sessionStorage tokens with secure HttpOnly cookie sessions, add rate limiting and CSRF protections, then deploy a staging environment.
 6. Expand the Expo Android/iOS client with workout tracking, profile onboarding, nutrition logs, localization, secure token storage, and device QA; the current native client is an early starter, not a store release.
-7. Add PostgreSQL-backed integration tests and automated database migration checks.
-8. Add nutrition summaries, daily targets, and progress charts only after collecting validated user-entered data.
+7. Complete the admin exercise editor, user support workflows, audit log, and secure role provisioning.
+8. Add PostgreSQL-backed integration tests and automated database migration checks.
+9. Add nutrition summaries, daily targets, and progress charts only after collecting validated user-entered data.
 
 ## Status policy
 A task is complete only after its files are committed and the relevant checks have passed. A design document is not proof of a working feature.

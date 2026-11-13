@@ -116,7 +116,7 @@ Free at initial launch.
 
 Version: 1.0.0
 
-Status: Initial Development
+Status: Early MVP — active development
 
 ## ⚠️ Disclaimer
 
@@ -157,7 +157,7 @@ Copy `.env.example` to `.env` and set a strong random `JWT_ACCESS_SECRET` plus y
 - Root workspace configuration: pnpm, TypeScript, ignore rules, and environment template.
 
 ### Development status
-The repository contains product specifications, monorepo/database foundations, and an initial NestJS API with authentication and protected profile onboarding endpoints. This is **not yet a runnable end-user application**. Mobile screens, web screens, database migrations, AI integration, and automated tests remain to be implemented and verified.
+The repository contains a working-scope web MVP, NestJS API modules, Prisma data model, and automated CI checks. It is not yet a public production service: a provisioned production database, deployment, native mobile apps, AI coach integration, and release security work remain outstanding.
 
 ### Phone-only workflow
 Open the repository in GitHub on your phone to review files and commits. For running builds and tests without a computer, use a browser-based development environment that supports Node.js and pnpm; do not paste secrets into public files or chat.
@@ -165,7 +165,7 @@ Open the repository in GitHub on your phone to review files and commits. For run
 
 ## Backend API — first implementation slice
 
-The repository now includes a NestJS API under `apps/api`:
+The repository includes a NestJS API under `apps/api`:
 - `GET /api/v1/health` — health check.
 - `POST /api/v1/auth/register` — create an account using a bcrypt password hash.
 - `POST /api/v1/auth/login` — verify credentials and issue a short-lived JWT.
@@ -194,14 +194,14 @@ The repository now includes a NestJS API under `apps/api`:
 The API listens on port 4000 by default. For deployment, use HTTPS, a secret manager, a production database, rate limiting, refresh-token/session management, email verification, password reset, and security monitoring. Do not use sample secrets in production.
 
 ### Verification status
-A GitHub Actions workflow has been added to validate the Prisma schema and compile the API on pushes and pull requests. The workflow must run in GitHub before this slice can be marked build-verified. A live PostgreSQL integration test has not yet been run.
+GitHub Actions validates the Prisma schema, generates Prisma Client, builds the API, runs DTO validation tests, and builds the web client. Check the latest run in the Actions tab before treating the current commit as verified. A live PostgreSQL integration test has not yet been run.
 
 
 ### Profile onboarding API
 
 The profile endpoints are protected by the JWT guard. `PATCH` validates input and rejects unknown properties; supported ranges include height 100–230 cm, weight 25–350 kg, training 1–7 days/week, and sessions 10–180 minutes. Equipment is limited to 30 short labels, and optional safety notes are limited to 1,000 characters. A first profile can be created without a display name; the account email prefix is used as a temporary default. The profile endpoint returns only the signed-in user's record.
 
-Build verification is pending until the latest GitHub Actions run completes. No live database integration test has been performed.
+No live PostgreSQL integration test has been performed.
 
 ### Exercise catalog API
 
@@ -217,4 +217,4 @@ The API CI job validates the Prisma schema, generates Prisma Client, builds the 
 
 ### Web application (early MVP)
 
-A responsive Arabic-first React/Vite client lives in `apps/web`. It includes account registration/login, profile onboarding, a published exercise catalog, workout start/set logging/completion, and workout history. It is an early MVP, not a production release. It uses a short-lived access token in `sessionStorage`; production should move authentication to secure, HttpOnly cookies before public launch. Configure `VITE_API_BASE_URL` and set the API `CORS_ORIGIN` to the web app origin. Local web development runs on `http://localhost:5173`; the API runs on port `4000`.
+A responsive Arabic-first React/Vite client lives in `apps/web`. It includes account registration/login, profile onboarding, a published exercise catalog, workout start, per-set repetition and optional weight logging, workout completion, and workout history. Set numbering is tracked in the active browser session; this is an early MVP, not a production release. It uses a short-lived access token in `sessionStorage`; production should move authentication to secure, HttpOnly cookies before public launch. Configure `VITE_API_BASE_URL` and set the API `CORS_ORIGIN` to the web app origin. Local web development runs on `http://localhost:5173`; the API runs on port `4000`.

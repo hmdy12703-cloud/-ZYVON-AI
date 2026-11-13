@@ -25,6 +25,11 @@ export class WorkoutsController {
     return this.workouts.list(request.user.sub, query);
   }
 
+  @Get('progress')
+  progress(@Req() request: AuthRequest) {
+    return this.workouts.progress(request.user.sub);
+  }
+
   @Get(':id')
   get(@Req() request: AuthRequest, @Param('id') id: string) {
     return this.workouts.get(request.user.sub, id);

@@ -222,11 +222,11 @@ export default function App() {
     }
   }
 
-  async function startWorkout() {
+  async function startWorkout(trainingPlanId?: string) {
     setBusy(true);
     setError('');
     try {
-      const result = await request('/workouts', { method: 'POST', body: JSON.stringify({}) });
+      const result = await request('/workouts', { method: 'POST', body: JSON.stringify(trainingPlanId ? { trainingPlanId } : {}) });
       setActiveWorkout(result.id);
       setScreen('training');
       await loadDashboard();
@@ -434,6 +434,7 @@ export default function App() {
                   {day.exercises.map((entry) => <Text key={entry.id} style={styles.muted}>{entry.exercise.nameAr || entry.exercise.nameEn} · {entry.sets} مجموعات · {entry.repsMin}–{entry.repsMax} تكرار{entry.durationSeconds ? ` · مدة ${entry.durationSeconds} ثانية` : ''} · راحة {entry.restSeconds} ثانية</Text>)}
                 </View>)}
                 {selectedPlan.status !== 'ACTIVE' && <Pressable style={styles.primary} onPress={() => activatePlan(selectedPlan.id)} disabled={busy}><Text style={styles.primaryText}>تفعيل هذه الخطة</Text></Pressable>}
+                {selectedPlan.status === 'ACTIVE' && !activeWorkout && <Pressable style={styles.primary} onPress={() => startWorkout(selectedPlan.id)} disabled={busy}><Text style={styles.primaryText}>ابدأ جلسة مرتبطة بالخطة</Text></Pressable>}
               </View>}
             </View>}
             {screen === 'training' && <View style={styles.card}>

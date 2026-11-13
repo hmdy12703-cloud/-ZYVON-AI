@@ -50,6 +50,9 @@ export default function App() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [activeWorkout, setActiveWorkout] = useState<string | null>(null);
+  const [reps, setReps] = useState('10');
+  const [loadKg, setLoadKg] = useState('');
+  const [setCounts, setSetCounts] = useState<Record<string, number>>({});
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -170,6 +173,7 @@ export default function App() {
     try {
       const result = await api('/workouts', { method: 'POST', body: JSON.stringify({}) });
       setActiveWorkout(result.id);
+      setSetCounts({});
       setMessage('بدأت جلسة التدريب. اختر تمرينًا لتسجيل أول مجموعة.');
       await loadDashboard();
     } catch (err) {
@@ -185,9 +189,10 @@ export default function App() {
     try {
       await api(`/workouts/${activeWorkout}/sets`, {
         method: 'POST',
-        body: JSON.stringify({ exerciseId, setNumber: 1, reps: 10, completed: true }),
+        body: JSON.stringify({ exerciseId, setNumber: (setCounts[exerciseId] || 0) + 1, reps: Number(reps), ...(loadKg !== '' ? { loadKg: Number(loadKg) } : {}), completed: true }),
       });
-      setMessage('تم تسجيل مجموعة تجريبية: 10 تكرارات. يمكنك تطوير تسجيل الأوزان والمجموعات لاحقًا.');
+      setSetCounts((current) => ({ ...current, [exerciseId]: (current[exerciseId] || 0) + 1 }));
+      setMessage('تم تسجيل المجموعة بنجاح.');
       await loadDashboard();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر تسجيل المجموعة');
@@ -246,7 +251,7 @@ export default function App() {
       </section>
       {error && <p className="alert error">{error}</p>}
       {message && <p className="alert success">{message}</p>}
-      {activeWorkout && <section className="active-banner"><div><strong>جلسة تدريب نشطة</strong><p>اختر تمرينًا من المكتبة لتسجيل مجموعة.</p></div><button className="danger" onClick={finishWorkout} disabled={busy}>إنهاء الجلسة</button></section>}
+      {activeWorkout && <section className="active-banner"><div><strong>جلسة تدريب نشطة</strong><p>حدد التكرارات والوزن، ثم سجّل كل مجموعة من مكتبة التمارين.</p><div className="set-inputs"><label>التكرارات<input type="number" min="1" max="1000" value={reps} onChange={(e) => setReps(e.target.value)} /></label><label>الوزن (كجم)<input type="number" min="0" max="1000" step="0.25" value={loadKg} onChange={(e) => setLoadKg(e.target.value)} placeholder="اختياري" /></label></div></div><button className="danger" onClick={finishWorkout} disabled={busy}>إنهاء الجلسة</button></section>}
       <div className="dashboard-grid">
         <section className="panel profile-panel">
           <div className="section-heading"><div><p className="eyebrow">YOUR BASELINE</p><h2>ملفك الرياضي</h2></div><span className="pill">التهيئة</span></div>
@@ -264,7 +269,7 @@ export default function App() {
         <section className="panel">
           <div className="section-heading"><div><p className="eyebrow">EXERCISE LIBRARY</p><h2>مكتبة التمارين</h2></div><span className="pill">{exercises.length} تمرين</span></div>
           <div className="exercise-list">
-            {exercises.map((exercise) => <article className="exercise-card" key={exercise.id}><div><h3>{exercise.nameAr}</h3><p>{exercise.nameEn}</p><small>{exercise.descriptionAr}</small><span className="level">{exercise.difficulty}</span></div>{activeWorkout && <button className="outline" disabled={busy} onClick={() => logExercise(exercise.id)}>تسجيل 10 تكرارات</button>}</article>)}
+            {exercises.map((exercise) => <article className="exercise-card" key={exercise.id}><div><h3>{exercise.nameAr}</h3><p>{exercise.nameEn}</p><small>{exercise.descriptionAr}</small><span className="level">{exercise.difficulty}</span></div>{activeWorkout && <button className="outline" disabled={busy} onClick={() => logExercise(exercise.id)}>تسجيل المجموعة {(setCounts[exercise.id] || 0) + 1}</button>}</article>)}
             {!exercises.length && <p className="muted">لا توجد تمارين منشورة بعد. ستظهر هنا عند إضافتها إلى المكتبة.</p>}
           </div>
         </section>

@@ -38,6 +38,7 @@ export default function App() {
   const [question, setQuestion] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [mode, setMode] = useState('RULE_BASED');
   const [screen, setScreen] = useState<'home' | 'profile' | 'training' | 'nutrition' | 'coach' | 'feedback' | 'plans'>('home');
   const [feedbackRating, setFeedbackRating] = useState('5');
@@ -485,11 +486,11 @@ export default function App() {
               </View>
               <TextInput style={[styles.input, styles.question]} value={feedbackComment} onChangeText={setFeedbackComment} maxLength={1000} multiline placeholder="اكتب ملاحظاتك أو اقتراحاتك..." placeholderTextColor="#8293aa" />
               <Pressable style={styles.primary} disabled={busy} onPress={async () => {
-                setBusy(true); setError('');
+                setBusy(true); setError(''); setSuccessMessage('');
                 try {
                   await request('/feedback', { method: 'POST', body: JSON.stringify({ category: 'APP_EXPERIENCE', rating: Number(feedbackRating), comment: feedbackComment.trim() || undefined }) });
                   setFeedbackComment('');
-                  setError('تم إرسال تقييمك بنجاح. شكرًا لمساعدتنا على التطوير.');
+                  setSuccessMessage('تم إرسال تقييمك بنجاح. شكرًا لمساعدتنا على التطوير.');
                 } catch (err) { setError(err instanceof Error ? err.message : 'تعذر إرسال التقييم'); }
                 finally { setBusy(false); }
               }}><Text style={styles.primaryText}>إرسال التقييم</Text></Pressable>
@@ -508,6 +509,7 @@ export default function App() {
           </>
         )}
         {!!error && <Text style={styles.error}>{String(error)}</Text>}
+        {!!successMessage && <Text style={styles.success}>{successMessage}</Text>}
         <Text style={styles.footer}>نسخة تطويرية · ZYVON AI · ليست بديلًا عن المختص الطبي</Text>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -555,6 +557,7 @@ const styles = StyleSheet.create({
   bubbleLabel: { color: '#70d7ff', fontSize: 10, fontWeight: '800' },
   bubbleText: { color: '#f3f7ff', lineHeight: 20, marginTop: 4, textAlign: 'right', fontSize: 13 },
   question: { minHeight: 60, textAlignVertical: 'top' },
+  success: { color: '#70d7a8', textAlign: 'center', marginTop: 12, fontWeight: '600' },
   error: { color: '#ffc1c7', backgroundColor: '#49232b', padding: 12, borderRadius: 10, marginTop: 14 },
   footer: { color: '#65758d', textAlign: 'center', marginTop: 22, fontSize: 10 },
 });

@@ -42,3 +42,15 @@ test('rejects an excessive exercise catalog page size', async () => {
   const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
   assert.ok(errors.some((error) => error.property === 'limit'));
 });
+
+
+test('rejects null repetitions in workout set payloads', async () => {
+  const { AddWorkoutSetDto } = await import('../src/workouts/dto/add-workout-set.dto');
+  const dto = plainToInstance(AddWorkoutSetDto, {
+    exerciseId: '00000000-0000-4000-8000-000000000000',
+    setNumber: 1,
+    reps: null,
+  });
+  const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+  assert.ok(errors.some((error) => error.property === 'reps'));
+});

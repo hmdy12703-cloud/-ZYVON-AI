@@ -52,13 +52,13 @@
 - [x] Display safe progression recommendations in web and mobile dashboards.
 - [x] Add admin feedback metrics and a latest-feedback review list.
 - [x] Capture post-workout perceived effort (1–10) and optional pain/symptom feedback from mobile and persist it when completing a workout.
+- [x] Add mobile plan list, profile-based plan generation, plan detail review, and activation flow.
 - [ ] Verify CI for the latest plan-generator and mobile-client commits.
 - [ ] Add database-backed integration tests using a disposable PostgreSQL service.
 
 ## Next build tasks
-1. Add plan progression UI to web/mobile, capture post-workout perceived effort and feedback, then tune progression only after user testing.
+1. Add full completed-workout detail/history views and link plan exercises to workout starts.
 2. Add admin audit events, user-support workflows, and exercise media management.
-3. Add mobile plan browsing/generation/activation, post-workout RPE/pain feedback capture, and full completed-workout detail/history views.
 4. Add database-backed integration tests using a disposable PostgreSQL service.
 5. Expand AI Coach with conversation persistence, structured exercise recommendations, voice input/output, rate limits, and additional safety regression tests. Configure `OPENAI_API_KEY` only in the API deployment secret store to enable provider-backed responses.
 6. Replace browser `sessionStorage` tokens with secure HttpOnly cookie sessions, add rate limiting and CSRF protections, then deploy a staging environment.

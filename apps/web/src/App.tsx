@@ -247,7 +247,8 @@ export default function App() {
 
   async function saveNutrition(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const payload: Record<string, number | string> = {};
     for (const field of ['calories', 'proteinGrams', 'carbsGrams', 'fatGrams'] as const) {
       const value = String(form.get(field) || '').trim();
@@ -264,7 +265,7 @@ export default function App() {
     try {
       await api('/nutrition/logs', { method: 'POST', body: JSON.stringify(payload) });
       setMessage('تم حفظ السجل الغذائي.');
-      event.currentTarget.reset();
+      formElement.reset();
       const logs = await api('/nutrition/logs');
       setNutritionLogs(Array.isArray(logs) ? logs : []);
     } catch (err) {

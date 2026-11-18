@@ -285,7 +285,7 @@ export default function App() {
       await request(`/workouts/${activeWorkout}/complete`, {
         method: 'PATCH',
         body: JSON.stringify({
-          perceivedEffort: Number(sessionEffort),
+          perceivedEffort: effort,
           ...(sessionFeedback.trim() ? { feedback: sessionFeedback.trim() } : {}),
         }),
       });

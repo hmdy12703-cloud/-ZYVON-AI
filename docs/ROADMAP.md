@@ -57,7 +57,7 @@
 - [x] Add mobile plan list, profile-based plan generation, plan detail review, and activation flow.
 - [x] Add user-scoped workout progress summary for the latest eight completed sessions and display it on mobile.
 - [x] Verify CI for the latest plan-generator and mobile-client commits.
-- [x] Add database-backed integration tests using a disposable PostgreSQL service.
+- [x] Add database-backed integration tests using a disposable PostgreSQL service.\n- [x] Tighten progression safety: load increases now require 12+ reps in both recent sessions at a stable load; recognize additional English and Arabic pain/strain terms.\n- [x] Add regression tests for one-session high-rep spikes, changed loads, and Arabic muscle-strain feedback.\n- [x] Validate mobile set reps/load and post-session effort/feedback before sending API requests.
 
 ## Next build tasks
 1. Add full completed-workout detail/history views and link plan exercises to workout starts.

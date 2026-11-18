@@ -18,7 +18,7 @@ export interface ProgressionRecommendation {
   reason: string;
 }
 
-const painSignals = /pain|hurt|injur|numb|tingl|ألم|وجع|إصابة|تنميل|خدر|وخز|دوخة/i;
+const painSignals = /pain|hurt|injur|numb|tingl|sore|ache|ألم|وجع|إصابة|تنميل|خدر|وخز|دوخة|تشنج|شد عضلي/i;
 
 export function buildProgressionRecommendations(
   sessions: ProgressionSession[],
@@ -56,13 +56,13 @@ export function buildProgressionRecommendations(
     const currentAverage = average(currentReps);
     const priorAverage = average(priorReps);
     const load = Math.max(...currentLoads);
-    const reachedTopRange = currentReps.length > 0 && currentReps.every((reps) => reps >= 12);
+    const priorLoads = prior.map((item) => item.loadKg ?? 0);\n    const priorTopRange = priorReps.length > 0 && priorReps.every((reps) => reps >= 12);\n    const stableLoad = priorLoads.length > 0 && priorLoads.every((priorLoad) =>\n      currentLoads.some((currentLoad) => currentLoad > 0 && priorLoad > 0 && Math.abs(currentLoad - priorLoad) / priorLoad <= 0.05),\n    );\n    const reachedTopRange = currentReps.length > 0 && currentReps.every((reps) => reps >= 12) && priorTopRange && stableLoad;
     if (reachedTopRange && load > 0) {
       recommendations.push({
         exerciseId,
         action: 'SMALL_LOAD_INCREASE',
         suggestedLoadKg: Math.round(load * 1.025 * 10) / 10,
-        reason: 'You completed all logged sets at 12+ reps in consecutive sessions. Consider a small 2.5% increase only if technique remains controlled.',
+        reason: 'You completed all logged sets at 12+ reps in both sessions with a stable load. Consider a small 2.5% increase only if technique remains controlled.',
       });
     } else if (currentAverage >= priorAverage && currentAverage > 0) {
       recommendations.push({
